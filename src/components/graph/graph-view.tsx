@@ -9,6 +9,7 @@ interface StackItem {
   slug: string;
   label: string;
   group_name: string;
+  details?: string[];
 }
 
 interface TrackItem {
@@ -32,6 +33,7 @@ export function GraphView() {
   const [isLoading, setIsLoading] = useState(true);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [saveMessage, setSaveMessage] = useState('');
+  const [expandedStackIds, setExpandedStackIds] = useState<Set<number>>(new Set());
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // 加载分类树（方向 -> 赛道 -> 技术栈）
@@ -120,6 +122,15 @@ export function GraphView() {
     [tagWeights],
   );
 
+  const toggleStackDetail = useCallback((tagId: number) => {
+    setExpandedStackIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(tagId)) next.delete(tagId);
+      else next.add(tagId);
+      return next;
+    });
+  }, []);
+
   // 滑块变化处理（300ms 防抖）
   const handleWeightChange = useCallback(
     (tagId: number, weight: number) => {
@@ -155,9 +166,9 @@ export function GraphView() {
 
   // 一次性保存所有权重
   const handleSaveAll = useCallback(async () => {
-    const weights = Array.from(tagWeights.entries()).map(([tag_id, weight]) => ({
-      tag_id,
-      weight,
+    const weights = Array.from(selectedTagIds).map((tagId) => ({
+      tag_id: tagId,
+      weight: tagWeights.get(tagId) ?? 0.5,
     }));
 
     try {
@@ -171,6 +182,10 @@ export function GraphView() {
       if (!res.ok) {
         throw new Error(`save failed: ${res.status}`);
       }
+      const data = await res.json();
+      if (!data.success || (weights.length > 0 && (data.updated_count ?? 0) <= 0)) {
+        throw new Error('save acknowledged but no rows updated');
+      }
       setSaveState('success');
       setSaveMessage('保存成功');
     } catch (error) {
@@ -178,7 +193,7 @@ export function GraphView() {
       setSaveState('error');
       setSaveMessage('保存失败，请稍后重试');
     }
-  }, [tagWeights]);
+  }, [selectedTagIds, tagWeights]);
 
   // 获取选中的节点信息
   const getSelectedNodes = useCallback((): Array<{ node: GraphNode; weight: number }> => {
@@ -261,18 +276,40 @@ export function GraphView() {
                     <div className="mt-3 flex flex-wrap gap-2">
                       {track.stacks.map((stack) => {
                         const isSelected = selectedTagIds.has(stack.tag_id);
+                        const detailExpanded = expandedStackIds.has(stack.tag_id);
                         return (
-                          <button
-                            key={stack.tag_id}
-                            onClick={() => handleStackClick(stack)}
-                            className={`rounded-md border px-2.5 py-1.5 text-sm transition-colors ${
-                              isSelected
-                                ? 'border-accent-blue bg-accent-blue/10 text-accent-blue'
-                                : 'border-border bg-bg-card text-text-primary hover:border-accent-blue/50'
-                            }`}
-                          >
-                            {stack.label}
-                          </button>
+                          <div key={stack.tag_id} className="rounded-md border border-border p-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => handleStackClick(stack)}
+                                className={`rounded-md border px-2.5 py-1.5 text-sm transition-colors ${
+                                  isSelected
+                                    ? 'border-accent-blue bg-accent-blue/10 text-accent-blue'
+                                    : 'border-border bg-bg-card text-text-primary hover:border-accent-blue/50'
+                                }`}
+                              >
+                                {stack.label}
+                              </button>
+                              {stack.details && stack.details.length > 0 && (
+                                <button
+                                  onClick={() => toggleStackDetail(stack.tag_id)}
+                                  className="rounded border border-border px-2 py-1 text-xs text-text-secondary hover:bg-bg-secondary"
+                                  title="展开更细分技术"
+                                >
+                                  {detailExpanded ? '收起细分' : '细分'}
+                                </button>
+                              )}
+                            </div>
+                            {detailExpanded && stack.details && stack.details.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {stack.details.map((d) => (
+                                  <span key={`${stack.tag_id}-${d}`} className="rounded bg-bg-secondary px-2 py-0.5 text-xs text-text-secondary">
+                                    {d}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>

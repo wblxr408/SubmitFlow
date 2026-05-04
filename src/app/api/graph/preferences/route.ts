@@ -83,6 +83,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { tag_weights } = body;
 
+    let updatedCount = 0;
     if (Array.isArray(tag_weights) && tag_weights.length > 0) {
       for (const { tag_id, weight } of tag_weights) {
         if (typeof tag_id !== 'number' || typeof weight !== 'number') continue;
@@ -93,11 +94,12 @@ export async function PATCH(request: NextRequest) {
            DO UPDATE SET weight = $3, updated_at = NOW()`,
           [profileId, tag_id, weight],
         );
+        updatedCount += 1;
       }
     }
 
-    log.debug({ count: tag_weights?.length ?? 0 }, 'Updated tag weights');
-    return NextResponse.json({ success: true });
+    log.debug({ count: updatedCount }, 'Updated tag weights');
+    return NextResponse.json({ success: true, updated_count: updatedCount, profile_id: profileId });
   } catch (err) {
     log.error({ err }, 'Failed to update tag weights');
     return NextResponse.json({ error: '更新标签权重失败' }, { status: 500 });

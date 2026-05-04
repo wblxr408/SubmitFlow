@@ -16,6 +16,7 @@ interface StackItem {
   slug: string;
   label: string;
   group_name: string;
+  details?: string[];
 }
 
 interface Track {
@@ -126,6 +127,20 @@ const trackLabel: Record<string, string> = {
   other: '未分类技术栈',
 };
 
+const stackDetailsMap: Record<string, string[]> = {
+  rag: ['Query Rewrite', 'Hybrid Search', 'Rerank', 'Context Compression'],
+  vllm: ['PagedAttention', 'Continuous Batching', 'KV Cache', 'Tensor Parallel'],
+  langchain: ['Chains', 'Tools', 'Memory', 'Retrieval'],
+  llamaindex: ['Index', 'Retriever', 'Node Parser', 'Query Engine'],
+  springboot: ['MVC', 'AOP', 'JPA', 'Spring Security'],
+  react: ['Hooks', 'State Management', 'SSR/CSR', 'Performance'],
+  kubernetes: ['Deployment', 'Service', 'Ingress', 'HPA'],
+  k8s: ['Deployment', 'Service', 'Ingress', 'HPA'],
+  mysql: ['索引优化', '事务隔离', '慢查询', '分库分表'],
+  redis: ['缓存策略', '分布式锁', 'Pipeline', '高可用'],
+  kafka: ['Topic 分区', '消费组', '幂等', 'Exactly-once'],
+};
+
 export async function GET() {
   try {
     const tags = await query<TagRow>(
@@ -145,6 +160,7 @@ export async function GET() {
         slug: tag.slug,
         label: tag.label,
         group_name: tag.group_name ?? '未分组',
+        details: stackDetailsMap[tag.slug.toLowerCase()] ?? [],
       });
     }
 

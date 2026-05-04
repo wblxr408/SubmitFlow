@@ -36,12 +36,23 @@ export default function ProfileSettingsPage() {
     fetch('/api/graph/preferences')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
       .then((d) => {
-        setTechStacks((d.detailed_prefs ?? []).filter((item: { weight: number }) => item.weight > 0));
+        setTechStacks((d.detailed_prefs ?? []).filter((item: { weight: number }) => Number(item.weight) > 0));
       })
       .catch(() => {
         setTechStacks([]);
       });
   }, []);
+
+  const refreshTechStacks = () => {
+    fetch('/api/graph/preferences', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
+      .then((d) => {
+        setTechStacks((d.detailed_prefs ?? []).filter((item: { weight: number }) => Number(item.weight) > 0));
+      })
+      .catch(() => {
+        setTechStacks([]);
+      });
+  };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +129,11 @@ export default function ProfileSettingsPage() {
 
       <Card>
         <CardTitle className="mb-4">技术评估偏好（用于推荐匹配）</CardTitle>
+        <div className="mb-3">
+          <Button size="sm" variant="outline" onClick={refreshTechStacks}>
+            刷新技术偏好
+          </Button>
+        </div>
         {techStacks.length === 0 ? (
           <p className="text-sm text-text-secondary">暂无已保存技术栈，请到“技术评估建档”页选择并保存。</p>
         ) : (
