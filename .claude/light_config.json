@@ -1,0 +1,48 @@
+{
+  "mode": "light",
+  "version": "1.0",
+  "rules": {
+    "indent": 2,
+    "function_naming": "camelCase",
+    "class_naming": "PascalCase",
+    "constant_naming": "UPPER_SNAKE_CASE",
+    "docstring": "jsdoc"
+  },
+  "checks": [
+    {
+      "id": "C001",
+      "name": "zero_grad",
+      "pattern": "loss.backward()",
+      "require_before": "optimizer.zero_grad()",
+      "severity": "critical"
+    },
+    {
+      "id": "C002",
+      "name": "eval_mode",
+      "pattern": "def (evaluate|predict|test)",
+      "require": "model.eval() and @torch.no_grad()",
+      "severity": "high"
+    },
+    {
+      "id": "C003",
+      "name": "safe_load",
+      "pattern": "torch.load(",
+      "require": "weights_only=True",
+      "severity": "high"
+    },
+    {
+      "id": "C004",
+      "name": "device_match",
+      "check": "model and data on same device",
+      "severity": "medium"
+    },
+    {
+      "id": "C005",
+      "name": "boundary",
+      "check": "empty input, division, index bounds",
+      "severity": "medium"
+    }
+  ],
+  "output": "compact",
+  "max_issues": 10
+}

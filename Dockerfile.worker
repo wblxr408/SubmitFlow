@@ -1,0 +1,31 @@
+# Dockerfile.worker — Node.js 后台任务容器
+FROM node:20-alpine AS base
+
+# Stage 1: Install deps
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm@latest && pnpm install --frozen-lockfile --prod=false
+
+# Stage 2: Copy source (no playwright needed for worker)
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Stage 3: Production runner
+FROM base AS runner
+WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs \
+ && adduser --system --uid 1001 worker
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+
+USER worker
+
+CMD ["node", "./node_modules/tsx/dist/cli.mjs", "src/worker/index.ts"]

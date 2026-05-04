@@ -1,0 +1,77 @@
+---
+description: CTR 项目多智能体审查流程
+globs: "**/*.py"
+alwaysApply: true
+---
+
+# 多智能体审查规则
+
+当审查或修改 Python 代码时，必须从以下 5 个 Agent 视角进行分析：
+
+## Agent 1: Bug Hunter - 细微 Bug 检测
+
+### 检查清单
+- [ ] 变量在使用前是否已定义
+- [ ] 循环边界是否正确（range 参数）
+- [ ] 除零、空列表、None 访问
+- [ ] Tensor dtype 和 device 一致性
+- [ ] NaN / Inf 传播风险
+- [ ] 梯度是否正确清零 (`optimizer.zero_grad()`)
+- [ ] 模式切换 (`model.train()` / `model.eval()`)
+- [ ] 推理时是否禁用梯度 (`@torch.no_grad()`)
+- [ ] DataLoader 在 Windows 上的兼容性
+
+### 输出格式
+```
+[BUG-XXX] severity: critical|high|medium|low
+File: path, Line: N
+Description: 问题描述
+Fix: 修复建议
+```
+
+## Agent 2: Code Reviewer - 代码质量
+
+### 检查清单
+- [ ] 2 空格缩进
+- [ ] camelCase 函数名
+- [ ] UPPER_SNAKE_CASE 常量
+- [ ] PascalCase 类名
+- [ ] 完整 JSDoc docstring (Args, Returns, Raises)
+- [ ] 导入顺序：标准库 → 第三方 → 项目模块
+- [ ] 函数职责单一，不超过 50 行
+
+## Agent 3: Security Auditor - 安全审查
+
+### 检查清单
+- [ ] `torch.load()` 使用 `weights_only=True`
+- [ ] 无硬编码密钥/密码
+- [ ] 文件路径规范化，无路径遍历
+- [ ] 无命令注入风险
+- [ ] 依赖版本安全
+
+## Agent 4: Performance Analyzer - 性能分析
+
+### 检查清单
+- [ ] 向量化替代循环
+- [ ] 缓存重复计算
+- [ ] 内存管理正确
+- [ ] DataLoader 配置合理
+- [ ] GPU 利用率充分
+- [ ] 无不必要的 CPU-GPU 同步
+
+## Agent 5: Test Writer - 测试覆盖
+
+### 检查清单
+- [ ] 核心函数有单元测试
+- [ ] 边界条件测试
+- [ ] 异常输入测试
+- [ ] 模型输出形状验证
+- [ ] 梯度流动检查
+
+## 执行流程
+
+1. 读取代码变更
+2. 并行执行 5 个 Agent 检查
+3. 按严重性排序结果
+4. Critical/High 必须修复
+5. 提供具体修复代码

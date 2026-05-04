@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "reviews": [],
+  "stats": {
+    "total_reviews": 0,
+    "issues_found": 0,
+    "issues_fixed": 0,
+    "avg_issues_per_review": 0.0
+  }
+}

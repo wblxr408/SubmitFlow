@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "feedback": [],
+  "agent_scores": {
+    "bug-hunter": {"correct": 0, "total": 0, "accuracy": 0.0},
+    "code-reviewer": {"correct": 0, "total": 0, "accuracy": 0.0},
+    "security-auditor": {"correct": 0, "total": 0, "accuracy": 0.0},
+    "performance-analyzer": {"correct": 0, "total": 0, "accuracy": 0.0},
+    "test-writer": {"correct": 0, "total": 0, "accuracy": 0.0}
+  }
+}

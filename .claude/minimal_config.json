@@ -1,0 +1,16 @@
+{
+  "rules": {
+    "indent": 2,
+    "function": "camelCase",
+    "constant": "UPPER_SNAKE_CASE",
+    "docstring": "jsdoc"
+  },
+  "checks": [
+    "optimizer.zero_grad() before loss.backward()",
+    "model.eval() + torch.no_grad() for inference",
+    "torch.load with weights_only=True",
+    "device consistency (model.to + data.to)",
+    "boundary conditions (empty, None, division)"
+  ],
+  "severity": ["critical", "high", "medium", "low", "info"]
+}

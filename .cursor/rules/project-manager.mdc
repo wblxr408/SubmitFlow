@@ -1,0 +1,129 @@
+---
+description: SubmitFlow 项目规范 - 产品需求与项目管理
+globs: "**/*"
+alwaysApply: false
+---
+
+# SubmitFlow 项目规范
+
+## 产品概述
+
+SubmitFlow 是一个面向 CS/AI 在校学生的实习与校招信息聚合与投递追踪平台。
+
+## 技术栈
+
+- 前端: Next.js 14 (App Router), React 18, TypeScript 5, Tailwind CSS
+- 后端: Next.js API Routes
+- 数据库: PostgreSQL
+- ORM: pg (node-postgres)
+- 部署: Docker, Vercel
+
+## 项目结构
+
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── (app)/            # 带侧边栏的布局组
+│   │   ├── page.tsx      # 首页 Dashboard
+│   │   ├── jobs/         # 岗位库
+│   │   ├── favorites/     # 我的收藏
+│   │   ├── referrals/     # 内推管理
+│   │   ├── recommendations/ # 推荐榜单
+│   │   ├── applications/  # 投递记录
+│   │   ├── resumes/       # 简历管理
+│   │   ├── match/         # AI 建档
+│   │   └── settings/      # 设置
+│   │       ├── profile/
+│   │       ├── reminders/
+│   │       ├── ai/
+│   │       └── integrations/
+│   ├── api/               # API Routes
+│   └── layout.tsx         # 根布局
+├── components/
+│   ├── ui/               # shadcn/ui 风格基础组件
+│   ├── providers/        # Context Providers (Theme)
+│   └── ...
+├── lib/                  # 工具函数 (db, utils, logger)
+├── server/               # 服务端业务逻辑
+├── db/
+│   ├── schema.sql        # 数据库 schema
+│   ├── seed.sql          # 种子数据
+│   └── migrations/       # 增量迁移 SQL
+└── types/                # TypeScript 类型定义
+```
+
+## 数据库规范
+
+### 表设计原则
+- 所有表必须包含: `id`, `created_at`, `updated_at`
+- 单实例模式: profile_id = 1 为默认用户
+- 软删除优先，使用 `status` 字段区分活跃/归档
+- 敏感数据加密存储 (API Key 等)
+
+### 命名规范
+- 表名: snake_case 复数 (e.g., `job_favorites`)
+- 列名: snake_case (e.g., `company_name`)
+- 索引: `idx_<table>_<column>`
+- 外键: `<table>_<column>_fk`
+
+## API 设计规范
+
+### RESTful
+```
+GET    /api/resource       # 列表 (支持分页)
+GET    /api/resource/:id   # 详情
+POST   /api/resource       # 创建
+PATCH  /api/resource/:id   # 更新
+DELETE /api/resource/:id   # 删除 (软删除)
+```
+
+### 响应格式
+```json
+// 成功
+{ "items": [...], "total": 100, "page": 1, "pageSize": 20 }
+
+// 单条
+{ "id": 1, "name": "xxx" }
+
+// 错误
+{ "error": "错误信息" }
+```
+
+## 组件规范
+
+### 命名
+- 文件: PascalCase (e.g., `JobCard.tsx`)
+- 组件名: PascalCase
+- 工具函数: camelCase
+- 常量: UPPER_SNAKE_CASE
+
+### Tailwind CSS
+- 使用 CSS Variables: `bg-bg-card`, `text-text-primary`
+- 颜色前缀: `text-`, `bg-`, `border-`
+- 尺寸: `text-xs`(12px), `text-sm`(14px), `text-base`(16px)
+- 响应式: `sm:`(640px), `md:`(768px), `lg:`(1024px)
+
+## 功能模块
+
+| 模块 | 路径 | 说明 |
+|------|------|------|
+| 首页 | `/` | Dashboard 统计、快速入口 |
+| 岗位库 | `/jobs` | 搜索、筛选、收藏 |
+| 我的收藏 | `/favorites` | 收藏岗位管理 |
+| 内推管理 | `/referrals` | 内推码、推荐人管理 |
+| 推荐榜单 | `/recommendations` | AI 推荐 + 权重配置 |
+| 投递记录 | `/applications` | 状态追踪、历史记录 |
+| 简历管理 | `/resumes` | 上传、标签、默认简历 |
+| AI 建档 | `/match` | 对话式求职画像 |
+| 设置 | `/settings` | 个人资料、提醒、主题 |
+
+## 版本历史
+
+- v1.0: 基础框架
+- v1.1: 岗位库、投递管理
+- v1.2: AI 建档、邮件同步
+- v1.3: 岗位收藏
+- v1.4: 内推管理
+- v1.5: 投递提醒
+- v1.6: 简历管理
+- v1.7: 暗色模式、快捷键

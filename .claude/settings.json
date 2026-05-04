@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python *)",
+      "Bash(pip *)",
+      "Bash(pytest *)",
+      "Bash(git *)",
+      "Bash(pylint *)",
+      "Bash(mypy *)",
+      "Bash(flake8 *)",
+      "Bash(black *)",
+      "Bash(isort *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)"
+    ]
+  },
+  "env": {
+    "PYTHONPATH": ".",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  }
+}

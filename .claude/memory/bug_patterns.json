@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "patterns": [],
+  "stats": {
+    "total_scans": 0,
+    "bugs_found": 0,
+    "false_positives": 0,
+    "accuracy_rate": 0.0
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "name": "ctr-prediction",
+  "version": "1.0.0",
+  "description": "CTR 预测项目 - 多智能体协作配置",
+  "agents": [
+    {
+      "name": "bug-hunter",
+      "description": "细微 bug 检测",
+      "priority": 1
+    },
+    {
+      "name": "code-reviewer",
+      "description": "代码质量审查",
+      "priority": 2
+    },
+    {
+      "name": "security-auditor",
+      "description": "安全漏洞检测",
+      "priority": 1
+    },
+    {
+      "name": "performance-analyzer",
+      "description": "性能瓶颈分析",
+      "priority": 3
+    },
+    {
+      "name": "test-writer",
+      "description": "测试覆盖分析",
+      "priority": 3
+    },
+    {
+      "name": "refactorer",
+      "description": "代码重构优化",
+      "priority": 2
+    },
+    {
+      "name": "orchestrator",
+      "description": "总调度器",
+      "priority": 0
+    }
+  ],
+  "rules": {
+    "indentation": 2,
+    "naming": {
+      "function": "camelCase",
+      "class": "PascalCase",
+      "constant": "UPPER_SNAKE_CASE",
+      "private": "_camelCase"
+    },
+    "docstring": "jsdoc",
+    "maxLineLength": 120
+  },
+  "severity_levels": ["critical", "high", "medium", "low", "info"],
+  "environment": {
+    "python": "3.8+",
+    "pytorch": "1.10+",
+    "conda_env": "used_pytorch"
+  }
+}

@@ -1,0 +1,79 @@
+---
+description: Python 编码规范
+globs: "**/*.py"
+alwaysApply: true
+---
+
+# Python 编码规范
+
+## 缩进与格式
+- 使用 2 空格缩进（非 4 空格，非 Tab）
+- 行长度最多 120 字符
+- 函数之间空 2 行，类方法之间空 1 行
+
+## 命名规范
+
+| 类型 | 风格 | 示例 |
+|------|------|------|
+| 函数/方法 | camelCase | `processData`, `trainModel` |
+| 类名 | PascalCase | `CTRModel`, `DataLoader` |
+| 常量 | UPPER_SNAKE_CASE | `DEVICE`, `LEARNING_RATE` |
+| 私有方法 | _camelCase | `_initWeights`, `_computeLoss` |
+| 模块/文件 | snake_case | `data_loader.py`, `train.py` |
+
+## Docstring (JSDoc 风格)
+
+```python
+def functionName(param1, param2):
+  """函数简短描述
+
+  详细描述（可选）
+
+  Args:
+    param1 (type): 参数1描述
+    param2 (type): 参数2描述
+
+  Returns:
+    type: 返回值描述
+
+  Raises:
+    ExceptionType: 异常描述
+  """
+```
+
+## 导入顺序
+
+```python
+# 1. 标准库
+import os
+import sys
+
+# 2. 第三方库
+import numpy as np
+import pandas as pd
+import torch
+
+# 3. 项目模块
+from models.deepfm import DeepFM
+```
+
+## PyTorch 规范
+
+```python
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+class CTRModel(nn.Module):
+  """模型描述"""
+
+  def __init__(self, config):
+    super().__init__()
+    self._initWeights()
+
+  def _initWeights(self):
+    for m in self.modules():
+      if isinstance(m, nn.Linear):
+        nn.init.xavier_uniform_(m.weight)
+
+  def forward(self, x):
+    pass
+```
