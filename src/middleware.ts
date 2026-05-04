@@ -18,6 +18,8 @@ const PUBLIC_PATHS = [
   '/api/auth/reset-password',
   '/api/auth/verify',
   '/api/health',
+  '/api/graph/taxonomy',
+  '/api/graph/preferences',
 ];
 
 const API_PREFIX = '/api/';

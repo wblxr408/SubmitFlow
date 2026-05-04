@@ -19,9 +19,9 @@ export function WeightPanel({
   if (selectedNodes.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-4">
-        <p className="mb-2 text-sm text-text-secondary">暂无选中的岗位</p>
+        <p className="mb-2 text-sm text-text-secondary">暂无选中的技术栈</p>
         <p className="text-xs text-text-tertiary">
-          点击左侧图谱中的 Level 3 节点来添加
+          选择左侧技术栈或展开第三级细分节点后添加
         </p>
       </div>
     );

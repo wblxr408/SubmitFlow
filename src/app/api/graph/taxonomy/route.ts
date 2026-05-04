@@ -16,7 +16,7 @@ interface StackItem {
   slug: string;
   label: string;
   group_name: string;
-  details?: string[];
+  children?: StackItem[];
 }
 
 interface Track {
@@ -127,18 +127,87 @@ const trackLabel: Record<string, string> = {
   other: '未分类技术栈',
 };
 
-const stackDetailsMap: Record<string, string[]> = {
-  rag: ['Query Rewrite', 'Hybrid Search', 'Rerank', 'Context Compression'],
-  vllm: ['PagedAttention', 'Continuous Batching', 'KV Cache', 'Tensor Parallel'],
-  langchain: ['Chains', 'Tools', 'Memory', 'Retrieval'],
-  llamaindex: ['Index', 'Retriever', 'Node Parser', 'Query Engine'],
-  springboot: ['MVC', 'AOP', 'JPA', 'Spring Security'],
-  react: ['Hooks', 'State Management', 'SSR/CSR', 'Performance'],
-  kubernetes: ['Deployment', 'Service', 'Ingress', 'HPA'],
-  k8s: ['Deployment', 'Service', 'Ingress', 'HPA'],
-  mysql: ['索引优化', '事务隔离', '慢查询', '分库分表'],
-  redis: ['缓存策略', '分布式锁', 'Pipeline', '高可用'],
-  kafka: ['Topic 分区', '消费组', '幂等', 'Exactly-once'],
+const childToParentSlug: Record<string, string> = {
+  'cpp-stl': 'cpp',
+  'cpp-inline': 'cpp',
+  'cpp-template': 'cpp',
+  'cpp-memory': 'cpp',
+  'java-jvm': 'java',
+  'java-concurrency': 'java',
+  'java-collection': 'java',
+  'java-io': 'java',
+  'python-async': 'python',
+  'python-gil': 'python',
+  'python-metaclass': 'python',
+  'python-typing': 'python',
+  'go-goroutine': 'go',
+  'go-channel': 'go',
+  'go-gmp': 'go',
+  'go-context': 'go',
+  'react-hooks': 'react',
+  'react-state': 'react',
+  'react-ssr': 'react',
+  'react-performance': 'react',
+  'vue-composition': 'vue',
+  'vue-router': 'vue',
+  'vue-pinia': 'vue',
+  'vue-performance': 'vue',
+  'springboot-mvc': 'springboot',
+  'springboot-aop': 'springboot',
+  'springboot-jpa': 'springboot',
+  'springboot-security': 'springboot',
+  'django-orm': 'django',
+  'django-middleware': 'django',
+  'django-auth': 'django',
+  'django-rest': 'django',
+  'fastapi-dependency': 'fastapi',
+  'fastapi-async': 'fastapi',
+  'fastapi-pydantic': 'fastapi',
+  'fastapi-openapi': 'fastapi',
+  'node-eventloop': 'nodejs',
+  'node-stream': 'nodejs',
+  'node-cluster': 'nodejs',
+  'node-buffer': 'nodejs',
+  'mysql-index': 'mysql',
+  'mysql-transaction': 'mysql',
+  'mysql-lock': 'mysql',
+  'mysql-sharding': 'mysql',
+  'redis-cache': 'redis',
+  'redis-lock': 'redis',
+  'redis-pipeline': 'redis',
+  'redis-ha': 'redis',
+  'kafka-topic': 'kafka',
+  'kafka-group': 'kafka',
+  'kafka-idempotent': 'kafka',
+  'kafka-eos': 'kafka',
+  'docker-image': 'docker',
+  'docker-network': 'docker',
+  'docker-volume': 'docker',
+  'docker-multistage': 'docker',
+  'k8s-deployment': 'k8s',
+  'k8s-service': 'k8s',
+  'k8s-ingress': 'k8s',
+  'k8s-hpa': 'k8s',
+  'pytorch-autograd': 'pytorch',
+  'pytorch-distributed': 'pytorch',
+  'pytorch-dataloader': 'pytorch',
+  'pytorch-amp': 'pytorch',
+  'tensorflow-graph': 'tensorflow',
+  'tensorflow-keras': 'tensorflow',
+  'tensorflow-serving': 'tensorflow',
+  'tensorflow-distributed': 'tensorflow',
+  'llm-prompt': 'llm',
+  'llm-functioncalling': 'llm',
+  'llm-evals': 'llm',
+  'llm-agent': 'llm',
+  'rag-rewrite': 'rag',
+  'rag-hybrid': 'rag',
+  'rag-rerank': 'rag',
+  'rag-compression': 'rag',
+  'vllm-pagedattention': 'vllm',
+  'vllm-batching': 'vllm',
+  'vllm-kvcache': 'vllm',
+  'vllm-tp': 'vllm',
 };
 
 export async function GET() {
@@ -149,18 +218,39 @@ export async function GET() {
        ORDER BY group_name NULLS LAST, label`,
     );
 
+    const childMap = new Map<string, StackItem[]>();
+    for (const tag of tags) {
+      const parentSlug = childToParentSlug[tag.slug];
+      if (!parentSlug) continue;
+      if (!childMap.has(parentSlug)) {
+        childMap.set(parentSlug, []);
+      }
+      childMap.get(parentSlug)!.push({
+        tag_id: tag.id,
+        slug: tag.slug,
+        label: tag.label,
+        group_name: tag.group_name ?? '未分组',
+        children: [],
+      });
+    }
+
     const dirMap = new Map<string, Map<string, StackItem[]>>();
     for (const tag of tags) {
+      if (childToParentSlug[tag.slug]) {
+        continue;
+      }
       const { direction, track } = classifyTag(tag);
       if (!dirMap.has(direction)) dirMap.set(direction, new Map<string, StackItem[]>());
       const trackMap = dirMap.get(direction)!;
       if (!trackMap.has(track)) trackMap.set(track, []);
+      const children = childMap.get(tag.slug) ?? [];
+      children.sort((a, b) => a.label.localeCompare(b.label, 'zh-CN'));
       trackMap.get(track)!.push({
         tag_id: tag.id,
         slug: tag.slug,
         label: tag.label,
         group_name: tag.group_name ?? '未分组',
-        details: stackDetailsMap[tag.slug.toLowerCase()] ?? [],
+        children,
       });
     }
 

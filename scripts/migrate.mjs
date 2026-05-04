@@ -9,31 +9,26 @@
  * 4. companies-extended.sql - Extended company data
  */
 import { Client } from 'pg';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const migrationDir = join(__dirname, '..', 'src', 'db', 'migrations');
+const orderedMigrationFiles = readdirSync(migrationDir)
+  .filter((name) => name.endsWith('.sql'))
+  .sort((a, b) => a.localeCompare(b, 'en'));
+
 const MIGRATION_ORDER = [
   // Basic table structure
   { name: 'schema.sql', path: join(__dirname, '..', 'src', 'db', 'schema.sql') },
   { name: 'seed.sql', path: join(__dirname, '..', 'src', 'db', 'seed.sql') },
-
-  // All migration scripts (by order)
-  { name: '001_add_job_favorites.sql', path: join(__dirname, '..', 'src', 'db', 'migrations', '001_add_job_favorites.sql') },
-  { name: '002_add_referrals.sql', path: join(__dirname, '..', 'src', 'db', 'migrations', '002_add_referrals.sql') },
-  { name: '003_add_reminders.sql', path: join(__dirname, '..', 'src', 'db', 'migrations', '003_add_reminders.sql') },
-  { name: '004_add_resumes.sql', path: join(__dirname, '..', 'src', 'db', 'migrations', '004_add_resumes.sql') },
-  { name: '005_add_profile_directions.sql', path: join(__dirname, '..', 'src', 'db', 'migrations', '005_add_profile_directions.sql') },
-  { name: '006_add_users.sql', path: join(__dirname, '..', 'src', 'db', 'migrations', '006_add_users.sql') },
-  { name: '007_add_user_profile_link.sql', path: join(__dirname, '..', 'src', 'db', 'migrations', '007_add_user_profile_link.sql') },
-  { name: '008_add_company_fields.sql', path: join(__dirname, '..', 'src', 'db', 'migrations', '008_add_company_fields.sql') },
-  { name: '009_optimize_indexes.sql', path: join(__dirname, '..', 'src', 'db', 'migrations', '009_optimize_indexes.sql') },
-  { name: '010_add_default_user.sql', path: join(__dirname, '..', 'src', 'db', 'migrations', '010_add_default_user.sql') },
-  { name: '011_fix_serial_sequences.sql', path: join(__dirname, '..', 'src', 'db', 'migrations', '011_fix_serial_sequences.sql') },
-  { name: '012_enhanced_search_and_profiling.sql', path: join(__dirname, '..', 'src', 'db', 'migrations', '012_enhanced_search_and_profiling.sql') },
+  ...orderedMigrationFiles.map((name) => ({
+    name,
+    path: join(migrationDir, name),
+  })),
 
   // Extended company data
   { name: 'companies-extended.sql', path: join(__dirname, '..', 'src', 'db', 'companies-extended.sql') },

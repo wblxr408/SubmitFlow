@@ -12,6 +12,17 @@ export default function ProfileSettingsPage() {
   const [techStacks, setTechStacks] = useState<Array<{ tag_id: number; tag_label: string; weight: number }>>([]);
   const formRef = useRef<HTMLFormElement>(null);
 
+  const normalizeTechStacks = (
+    items: Array<{ tag_id: number | string; tag_label: string; weight: number | string }>,
+  ) =>
+    items
+      .map((item) => ({
+        tag_id: Number(item.tag_id),
+        tag_label: item.tag_label,
+        weight: Number(item.weight),
+      }))
+      .filter((item) => Number.isFinite(item.tag_id) && Number.isFinite(item.weight) && item.weight > 0);
+
   useEffect(() => {
     fetch('/api/profile')
       .then((r) => r.json())
@@ -36,7 +47,7 @@ export default function ProfileSettingsPage() {
     fetch('/api/graph/preferences')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
       .then((d) => {
-        setTechStacks((d.detailed_prefs ?? []).filter((item: { weight: number }) => Number(item.weight) > 0));
+        setTechStacks(normalizeTechStacks(d.detailed_prefs ?? []));
       })
       .catch(() => {
         setTechStacks([]);
@@ -47,7 +58,7 @@ export default function ProfileSettingsPage() {
     fetch('/api/graph/preferences', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
       .then((d) => {
-        setTechStacks((d.detailed_prefs ?? []).filter((item: { weight: number }) => Number(item.weight) > 0));
+        setTechStacks(normalizeTechStacks(d.detailed_prefs ?? []));
       })
       .catch(() => {
         setTechStacks([]);

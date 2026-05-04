@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { GraphNode } from '@/types';
 import { WeightPanel } from './weight-panel';
+import { useToast } from '@/components/ui/toast';
 
 interface StackItem {
   tag_id: number;
   slug: string;
   label: string;
   group_name: string;
-  details?: string[];
+  children?: StackItem[];
 }
 
 interface TrackItem {
@@ -25,6 +26,7 @@ interface DirectionItem {
 }
 
 export function GraphView() {
+  const { success, error } = useToast();
   const [directions, setDirections] = useState<DirectionItem[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(new Set());
   const [tagWeights, setTagWeights] = useState<Map<number, number>>(new Map());
@@ -40,7 +42,7 @@ export function GraphView() {
   useEffect(() => {
     async function loadTaxonomy() {
       try {
-        const res = await fetch('/api/graph/taxonomy');
+        const res = await fetch('/api/graph/taxonomy', { credentials: 'include' });
         const data = await res.json();
         const loadedDirections = (data.directions || []) as DirectionItem[];
         setDirections(loadedDirections);
@@ -71,7 +73,7 @@ export function GraphView() {
   useEffect(() => {
     async function loadPreferences() {
       try {
-        const res = await fetch('/api/graph/preferences');
+        const res = await fetch('/api/graph/preferences', { credentials: 'include', cache: 'no-store' });
         const data = await res.json();
         const prefs = data.prefs || [];
         const weights = new Map<number, number>();
@@ -122,7 +124,7 @@ export function GraphView() {
     [tagWeights],
   );
 
-  const toggleStackDetail = useCallback((tagId: number) => {
+  const toggleStackExpanded = useCallback((tagId: number) => {
     setExpandedStackIds((prev) => {
       const next = new Set(prev);
       if (next.has(tagId)) next.delete(tagId);
@@ -145,6 +147,7 @@ export function GraphView() {
           const res = await fetch('/api/graph/preferences', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({
               tag_weights: [{ tag_id: tagId, weight }],
             }),
@@ -154,14 +157,16 @@ export function GraphView() {
           }
           setSaveState('success');
           setSaveMessage('已自动保存');
-        } catch (error) {
-          console.error('Failed to save weight:', error);
-          setSaveState('error');
-          setSaveMessage('自动保存失败，请点击“保存全部”重试');
+          success('技术偏好已自动保存');
+      } catch (err) {
+        console.error('Failed to save weight:', err);
+        setSaveState('error');
+        setSaveMessage('自动保存失败，请点击“保存全部”重试');
+        error('自动保存失败');
         }
       }, 300);
     },
-    [],
+    [error, success],
   );
 
   // 一次性保存所有权重
@@ -177,7 +182,8 @@ export function GraphView() {
       const res = await fetch('/api/graph/preferences', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tag_weights: weights }),
+        credentials: 'include',
+        body: JSON.stringify({ tag_weights: weights, replace_all: true }),
       });
       if (!res.ok) {
         throw new Error(`save failed: ${res.status}`);
@@ -188,12 +194,38 @@ export function GraphView() {
       }
       setSaveState('success');
       setSaveMessage('保存成功');
-    } catch (error) {
-      console.error('Failed to save all weights:', error);
+      success('技术偏好保存成功');
+    } catch (err) {
+      console.error('Failed to save all weights:', err);
       setSaveState('error');
       setSaveMessage('保存失败，请稍后重试');
+      error('技术偏好保存失败');
     }
-  }, [selectedTagIds, tagWeights]);
+  }, [error, selectedTagIds, success, tagWeights]);
+
+  const collectSelectedNodes = useCallback(
+    (stack: StackItem, trackLabel: string, selected: Array<{ node: GraphNode; weight: number }>) => {
+      if (selectedTagIds.has(stack.tag_id)) {
+        selected.push({
+          node: {
+            id: stack.tag_id,
+            parent_id: null,
+            level: 3,
+            label: `${stack.label} · ${trackLabel}`,
+            tag_id: stack.tag_id,
+            sort_order: 0,
+            created_at: '',
+          },
+          weight: tagWeights.get(stack.tag_id) ?? 0.5,
+        });
+      }
+
+      for (const child of stack.children ?? []) {
+        collectSelectedNodes(child, `${trackLabel} / ${stack.label}`, selected);
+      }
+    },
+    [selectedTagIds, tagWeights],
+  );
 
   // 获取选中的节点信息
   const getSelectedNodes = useCallback((): Array<{ node: GraphNode; weight: number }> => {
@@ -201,25 +233,51 @@ export function GraphView() {
     for (const direction of directions) {
       for (const track of direction.tracks) {
         for (const stack of track.stacks) {
-          if (selectedTagIds.has(stack.tag_id)) {
-            selected.push({
-              node: {
-                id: stack.tag_id,
-                parent_id: null,
-                level: 3,
-                label: `${stack.label} · ${track.label}`,
-                tag_id: stack.tag_id,
-                sort_order: 0,
-                created_at: '',
-              },
-              weight: tagWeights.get(stack.tag_id) ?? 0.5,
-            });
-          }
+          collectSelectedNodes(stack, track.label, selected);
         }
       }
     }
     return selected;
-  }, [directions, selectedTagIds, tagWeights]);
+  }, [collectSelectedNodes, directions]);
+
+  const renderStackNode = useCallback((stack: StackItem, depth: number = 0) => {
+    const isSelected = selectedTagIds.has(stack.tag_id);
+    const isExpanded = expandedStackIds.has(stack.tag_id);
+    const hasChildren = (stack.children?.length ?? 0) > 0;
+
+    return (
+      <div
+        key={stack.tag_id}
+        className={`rounded-md border border-border p-2 ${depth > 0 ? 'bg-bg-secondary/50' : 'bg-bg-card'}`}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => handleStackClick(stack)}
+            className={`rounded-md border px-2.5 py-1.5 text-sm transition-colors ${
+              isSelected
+                ? 'border-accent-blue bg-accent-blue/10 text-accent-blue'
+                : 'border-border bg-bg-card text-text-primary hover:border-accent-blue/50'
+            }`}
+          >
+            {stack.label}
+          </button>
+          {hasChildren && (
+            <button
+              onClick={() => toggleStackExpanded(stack.tag_id)}
+              className="rounded border border-border px-2 py-1 text-xs text-text-secondary hover:bg-bg-secondary"
+            >
+              {isExpanded ? '收起三级' : `展开三级 (${stack.children?.length ?? 0})`}
+            </button>
+          )}
+        </div>
+        {hasChildren && isExpanded && (
+          <div className="mt-2 ml-2 space-y-2 border-l border-border pl-3">
+            {stack.children?.map((child) => renderStackNode(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
+  }, [expandedStackIds, handleStackClick, selectedTagIds, toggleStackExpanded]);
 
   const activeDirection = directions.find((dir) => dir.id === activeDirectionId) ?? null;
 
@@ -256,7 +314,7 @@ export function GraphView() {
 
         {activeDirection && (
           <div className="space-y-3">
-            <p className="text-xs text-text-tertiary">第 2/3 层：展开赛道并多选技术栈</p>
+            <p className="text-xs text-text-tertiary">第 2 层：赛道，第 3 层：展开技术栈细分能力点</p>
             {activeDirection.tracks.map((track) => {
               const trackKey = `${activeDirection.id}:${track.id}`;
               const expanded = expandedTrackIds.has(trackKey);
@@ -273,45 +331,8 @@ export function GraphView() {
                   </button>
 
                   {expanded && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {track.stacks.map((stack) => {
-                        const isSelected = selectedTagIds.has(stack.tag_id);
-                        const detailExpanded = expandedStackIds.has(stack.tag_id);
-                        return (
-                          <div key={stack.tag_id} className="rounded-md border border-border p-1.5">
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                onClick={() => handleStackClick(stack)}
-                                className={`rounded-md border px-2.5 py-1.5 text-sm transition-colors ${
-                                  isSelected
-                                    ? 'border-accent-blue bg-accent-blue/10 text-accent-blue'
-                                    : 'border-border bg-bg-card text-text-primary hover:border-accent-blue/50'
-                                }`}
-                              >
-                                {stack.label}
-                              </button>
-                              {stack.details && stack.details.length > 0 && (
-                                <button
-                                  onClick={() => toggleStackDetail(stack.tag_id)}
-                                  className="rounded border border-border px-2 py-1 text-xs text-text-secondary hover:bg-bg-secondary"
-                                  title="展开更细分技术"
-                                >
-                                  {detailExpanded ? '收起细分' : '细分'}
-                                </button>
-                              )}
-                            </div>
-                            {detailExpanded && stack.details && stack.details.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-1.5">
-                                {stack.details.map((d) => (
-                                  <span key={`${stack.tag_id}-${d}`} className="rounded bg-bg-secondary px-2 py-0.5 text-xs text-text-secondary">
-                                    {d}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                    <div className="mt-3 grid gap-2">
+                      {track.stacks.map((stack) => renderStackNode(stack))}
                     </div>
                   )}
                 </div>

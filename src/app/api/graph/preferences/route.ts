@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { execute, query } from '@/lib/db';
+import { execute, query, transaction } from '@/lib/db';
 import { createLogger } from '@/lib/logger';
 import { getAuthContext } from '@/lib/auth-context';
 
@@ -81,20 +81,41 @@ export async function PATCH(request: NextRequest) {
   try {
     const profileId = await resolveProfileId(request);
     const body = await request.json();
-    const { tag_weights } = body;
+    const { tag_weights, replace_all } = body;
 
     let updatedCount = 0;
-    if (Array.isArray(tag_weights) && tag_weights.length > 0) {
-      for (const { tag_id, weight } of tag_weights) {
-        if (typeof tag_id !== 'number' || typeof weight !== 'number') continue;
-        await execute(
-          `INSERT INTO user_tag_prefs (profile_id, tag_id, weight, updated_at)
-           VALUES ($1, $2, $3, NOW())
-           ON CONFLICT (profile_id, tag_id)
-           DO UPDATE SET weight = $3, updated_at = NOW()`,
-          [profileId, tag_id, weight],
-        );
-        updatedCount += 1;
+    if (Array.isArray(tag_weights)) {
+      const normalizedWeights = tag_weights
+        .filter((item: unknown) => typeof item === 'object' && item !== null)
+        .map((item: { tag_id?: unknown; weight?: unknown }) => ({
+          tag_id: Number(item.tag_id),
+          weight: Number(item.weight),
+        }))
+        .filter((item) => Number.isFinite(item.tag_id) && Number.isFinite(item.weight));
+
+      if (replace_all) {
+        await transaction(async (client) => {
+          await client.query(`DELETE FROM user_tag_prefs WHERE profile_id = $1`, [profileId]);
+          for (const { tag_id, weight } of normalizedWeights) {
+            await client.query(
+              `INSERT INTO user_tag_prefs (profile_id, tag_id, weight, updated_at)
+               VALUES ($1, $2, $3, NOW())`,
+              [profileId, tag_id, weight],
+            );
+          }
+        });
+        updatedCount = normalizedWeights.length;
+      } else {
+        for (const { tag_id, weight } of normalizedWeights) {
+          await execute(
+            `INSERT INTO user_tag_prefs (profile_id, tag_id, weight, updated_at)
+             VALUES ($1, $2, $3, NOW())
+             ON CONFLICT (profile_id, tag_id)
+             DO UPDATE SET weight = $3, updated_at = NOW()`,
+            [profileId, tag_id, weight],
+          );
+          updatedCount += 1;
+        }
       }
     }
 
