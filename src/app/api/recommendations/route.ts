@@ -109,6 +109,8 @@ interface RecommendationCandidateRow extends Record<string, unknown> {
   company_sub_industry: string | null;
 }
 
+type MatchLevel = '完全匹配' | '近似匹配' | '不匹配';
+
 function normalizeText(value: unknown): string {
   if (typeof value !== 'string') {
     return '';
@@ -213,6 +215,22 @@ function filterRecommendationRows(
 
     return isTechJob;
   });
+}
+
+function resolveMatchLevel(
+  jobTagIds: number[],
+  selectedTagIds: number[],
+): MatchLevel {
+  if (selectedTagIds.length === 0) return '近似匹配';
+  if (jobTagIds.length === 0) return '不匹配';
+
+  const selectedSet = new Set(selectedTagIds);
+  const hitCount = jobTagIds.filter((id) => selectedSet.has(id)).length;
+  const hitRatio = hitCount / Math.max(1, selectedTagIds.length);
+
+  if (hitCount >= 3 || hitRatio >= 0.6) return '完全匹配';
+  if (hitCount >= 1 || hitRatio >= 0.2) return '近似匹配';
+  return '不匹配';
 }
 
 export async function GET(request: NextRequest) {
@@ -322,6 +340,9 @@ export async function GET(request: NextRequest) {
 
   // 更新 context 的 tagPrefs
   context.tagPrefs = tagPrefs as typeof context.tagPrefs;
+  const selectedTagIds = (tagPrefs as Array<{ tag_id: number; weight: number }>)
+    .filter((pref) => Number(pref.weight) > 0)
+    .map((pref) => pref.tag_id);
 
   const latestProfileResult = parseAgentProfileResult(latestSession?.result_json);
   const interestedDirections = normalizeStringList(
@@ -401,9 +422,13 @@ export async function GET(request: NextRequest) {
     const coldStartJobs: Array<Record<string, unknown>> = [];
     for (const source of coldStartSources) {
       for (const job of source.jobs) {
+        const jobTagIds = Array.isArray((job as { tags?: Array<{ id: number }> }).tags)
+          ? ((job as { tags?: Array<{ id: number }> }).tags ?? []).map((t) => t.id)
+          : [];
         coldStartJobs.push({
           ...job,
           composite_score: job.sourceScore,
+          match_level: resolveMatchLevel(jobTagIds, selectedTagIds),
           source_type: source.type,
         });
       }
@@ -424,6 +449,12 @@ export async function GET(request: NextRequest) {
       return {
         ...job,
         composite_score: result.totalScore,
+        match_level: resolveMatchLevel(
+          Array.isArray((job as { tags?: Array<{ id: number }> }).tags)
+            ? ((job as { tags?: Array<{ id: number }> }).tags ?? []).map((t) => t.id)
+            : [],
+          selectedTagIds,
+        ),
         ...(includeBreakdown ? { score_breakdown: result.dimensions } : {}),
       };
     });

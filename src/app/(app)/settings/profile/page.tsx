@@ -9,6 +9,7 @@ export default function ProfileSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [techStacks, setTechStacks] = useState<Array<{ tag_id: number; tag_label: string; weight: number }>>([]);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -31,6 +32,15 @@ export default function ProfileSettingsPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    fetch('/api/graph/preferences')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
+      .then((d) => {
+        setTechStacks((d.detailed_prefs ?? []).filter((item: { weight: number }) => item.weight > 0));
+      })
+      .catch(() => {
+        setTechStacks([]);
+      });
   }, []);
 
   const save = async (e: React.FormEvent) => {
@@ -103,6 +113,24 @@ export default function ProfileSettingsPage() {
               )}
             </div>
           </form>
+        )}
+      </Card>
+
+      <Card>
+        <CardTitle className="mb-4">技术评估偏好（用于推荐匹配）</CardTitle>
+        {techStacks.length === 0 ? (
+          <p className="text-sm text-text-secondary">暂无已保存技术栈，请到“技术评估建档”页选择并保存。</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {techStacks.map((item) => (
+              <span
+                key={item.tag_id}
+                className="rounded-full border border-border bg-bg-secondary px-2.5 py-1 text-xs text-text-primary"
+              >
+                {item.tag_label} · {item.weight.toFixed(2)}
+              </span>
+            ))}
+          </div>
         )}
       </Card>
     </div>

@@ -130,7 +130,7 @@ if (-not $SkipCheck) {
 
     # Check pnpm
     try {
-        $pnpmVersion = pnpm --version
+        $pnpmVersion = npx pnpm --version
         Write-Success "pnpm: $pnpmVersion"
     } catch {
         Write-Err "pnpm not installed. Installing..."
@@ -154,7 +154,7 @@ if (-not $SkipInstall) {
     Write-Step "Step 2: Installing Project Dependencies"
 
     if (-not (Test-Path "node_modules")) {
-        if (-not (Run-Command "pnpm install" "Install dependencies")) {
+        if (-not (Run-Command "npx pnpm install" "Install dependencies")) {
             Write-Err "Dependency installation failed"
             exit 1
         }
@@ -244,8 +244,11 @@ if ($DockerDb) {
         exit 1
     }
 
-    # Check if container already exists
-    $existingContainer = docker ps -a --filter "name=submitflow-postgres" --format "{{.Names}}" 2>$null
+    # Check if container already exists (docker-compose or manual)
+    $existingContainer = docker ps -a --filter "name=submitflow-postgres" --format "{{.Names}}" 2>$null | Select-Object -First 1
+    if (-not $existingContainer) {
+        $existingContainer = docker ps -a --filter "name=submitflow-db" --format "{{.Names}}" 2>$null | Select-Object -First 1
+    }
 
     if ($existingContainer) {
         Write-Info "Found existing PostgreSQL container: $existingContainer"
@@ -254,8 +257,8 @@ if ($DockerDb) {
             docker stop $existingContainer 2>$null
             docker rm $existingContainer 2>$null
         } else {
-            # Start existing container
-            docker start $existingContainer
+            # Start existing container (suppress container name output)
+            docker start $existingContainer 2>$null | Out-Null
             Write-Success "PostgreSQL container started"
         }
     }
@@ -285,7 +288,7 @@ if ($DockerDb) {
         for ($i = 1; $i -le $maxRetries; $i++) {
             Start-Sleep -Seconds 2
             try {
-                docker exec submitflow-postgres pg_isready -U postgres -q
+                docker exec $containerName pg_isready -U postgres -q
                 if ($LASTEXITCODE -eq 0) {
                     Write-Success "Database is ready (waited ${i}x2 seconds)"
                     break
@@ -372,12 +375,16 @@ if (-not (Test-Path "src\db\schema.sql")) {
 
 # Check for migrate script
 $containerName = "submitflow-postgres"
-$containerExists = docker ps -a --filter "name=$containerName" --format "{{.Names}}" 2>$null
+$containerExists = docker ps -a --filter "name=submitflow-postgres" --format "{{.Names}}" 2>$null
+if (-not $containerExists) {
+    $containerName = (docker ps -a --filter "name=submitflow-db" --format "{{.Names}}" 2>$null).Split("`n")[0]
+    $containerExists = ![string]::IsNullOrEmpty($containerName)
+}
 
 # Try npm run db:migrate first
 if (Test-Path "package.json") {
     Write-Info "Running npm run db:migrate..."
-    $migrateResult = pnpm run db:migrate 2>&1
+    $migrateResult = npx pnpm run db:migrate 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Success "Database migration completed"
     } else {
@@ -422,7 +429,7 @@ if (Test-Path "package.json") {
             Write-Warning "No Docker container found and npm migrate failed."
             Write-Info "Please run the migration manually:"
             Write-Info "  1. Make sure PostgreSQL is running"
-            Write-Info "  2. Run: pnpm run db:migrate"
+            Write-Info "  2. Run: npx pnpm run db:migrate"
         }
     }
 } else {
@@ -442,9 +449,9 @@ Write-Host ""
 # Start Next.js
 Write-Info "Starting Next.js..."
 $devJob = Start-Job -ScriptBlock {
-    Set-Location $using:projectRoot
-    pnpm run dev
-}
+        Set-Location $using:projectRoot
+        npx pnpm run dev
+    }
 
 # Wait for server to start
 Write-Info "Waiting for server to start (5 seconds)..."

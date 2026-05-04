@@ -1,0 +1,107 @@
+-- 第二轮扩充技术栈标签覆盖面
+INSERT INTO tags (slug, label, group_name, color_hex, is_preset) VALUES
+  -- 前端与客户端
+  ('remix', 'Remix', '前端框架', '#121212', TRUE),
+  ('astro', 'Astro', '前端框架', '#FF5D01', TRUE),
+  ('qwik', 'Qwik', '前端框架', '#18B6F6', TRUE),
+  ('microfrontend', 'Micro Frontend', '前端工程化', '#646CFF', TRUE),
+  ('modulefederation', 'Module Federation', '前端工程化', '#8DD6F9', TRUE),
+  ('vitepress', 'VitePress', '前端工程化', '#646CFF', TRUE),
+  ('electron', 'Electron', '客户端开发', '#47848F', TRUE),
+  ('tauri', 'Tauri', '客户端开发', '#FFC131', TRUE),
+  ('capacitor', 'Capacitor', '客户端开发', '#119EFF', TRUE),
+  ('uniapp', 'uni-app', '客户端开发', '#2B9939', TRUE),
+  ('weapp', '微信小程序', '客户端开发', '#07C160', TRUE),
+
+  -- 后端与架构
+  ('quarkus', 'Quarkus', '后端框架', '#4695EB', TRUE),
+  ('micronaut', 'Micronaut', '后端框架', '#0044CC', TRUE),
+  ('vertx', 'Vert.x', '后端框架', '#782A90', TRUE),
+  ('dotnet', '.NET', '后端框架', '#512BD4', TRUE),
+  ('aspnetcore', 'ASP.NET Core', '后端框架', '#512BD4', TRUE),
+  ('laravel', 'Laravel', '后端框架', '#FF2D20', TRUE),
+  ('rails', 'Ruby on Rails', '后端框架', '#CC0000', TRUE),
+  ('actix', 'Actix', '后端框架', '#DEA584', TRUE),
+  ('axum', 'Axum', '后端框架', '#DEA584', TRUE),
+  ('oauth2', 'OAuth2', '服务治理', '#244C5A', TRUE),
+  ('jwt', 'JWT', '服务治理', '#000000', TRUE),
+  ('servicemesh', 'Service Mesh', '服务治理', '#466BB0', TRUE),
+  ('consul', 'Consul', '服务治理', '#F24C53', TRUE),
+
+  -- 数据库/中间件/缓存
+  ('cassandra', 'Cassandra', '数据库', '#1287B1', TRUE),
+  ('neo4j', 'Neo4j', '数据库', '#4581C3', TRUE),
+  ('influxdb', 'InfluxDB', '数据库', '#22ADF6', TRUE),
+  ('timescaledb', 'TimescaleDB', '数据库', '#F15A24', TRUE),
+  ('sharding', 'ShardingSphere', '中间件', '#2F54EB', TRUE),
+  ('canal', 'Canal', '中间件', '#0052D9', TRUE),
+  ('debezium', 'Debezium', '中间件', '#D81E06', TRUE),
+  ('pulsar', 'Apache Pulsar', '中间件', '#188FFF', TRUE),
+  ('hazelcast', 'Hazelcast', '中间件', '#0A6CFF', TRUE),
+  ('memcached', 'Memcached', '中间件', '#336791', TRUE),
+
+  -- AI / 算法 / 推荐搜索
+  ('ray', 'Ray', 'AI方向', '#028CF0', TRUE),
+  ('xgboost', 'XGBoost', 'AI方向', '#E04F1A', TRUE),
+  ('lightgbm', 'LightGBM', 'AI方向', '#02569B', TRUE),
+  ('catboost', 'CatBoost', 'AI方向', '#FFCC00', TRUE),
+  ('onnx', 'ONNX', 'AI方向', '#005CED', TRUE),
+  ('onnxruntime', 'ONNX Runtime', 'AI方向', '#005CED', TRUE),
+  ('openvino', 'OpenVINO', 'AI方向', '#0071C5', TRUE),
+  ('modelscope', 'ModelScope', 'AI方向', '#4B0082', TRUE),
+  ('autogen', 'AutoGen', 'AI方向', '#4B0082', TRUE),
+  ('crewai', 'CrewAI', 'AI方向', '#4B0082', TRUE),
+  ('langgraph', 'LangGraph', 'AI方向', '#4B0082', TRUE),
+  ('rerank', 'Rerank', 'AI方向', '#4B0082', TRUE),
+  ('embedding', 'Embedding', 'AI方向', '#4B0082', TRUE),
+  ('knowledgegraph', '知识图谱', 'AI方向', '#4B0082', TRUE),
+  ('fa', '因子分解机', 'AI方向', '#4B0082', TRUE),
+  ('recall', '召回系统', 'AI方向', '#4B0082', TRUE),
+  ('ranking', '排序模型', 'AI方向', '#4B0082', TRUE),
+  ('ctr', 'CTR 预估', 'AI方向', '#4B0082', TRUE),
+  ('featurestore', 'Feature Store', 'AI方向', '#4B0082', TRUE),
+
+  -- 数据工程与实时计算
+  ('datalake', 'Data Lake', '大数据', '#FF6D00', TRUE),
+  ('delta', 'Delta Lake', '大数据', '#00ADD8', TRUE),
+  ('iceberg', 'Apache Iceberg', '大数据', '#2E77BC', TRUE),
+  ('hudi', 'Apache Hudi', '大数据', '#0052CC', TRUE),
+  ('kylin', 'Apache Kylin', '大数据', '#4B9CD3', TRUE),
+  ('seatunnel', 'SeaTunnel', '大数据', '#0A84FF', TRUE),
+  ('dolphinscheduler', 'DolphinScheduler', '大数据', '#0F6FFF', TRUE),
+  ('flume', 'Flume', '大数据', '#CC0000', TRUE),
+
+  -- 云原生/运维/SRE
+  ('serverless', 'Serverless', '云服务', '#FF9900', TRUE),
+  ('knative', 'Knative', '云服务', '#0865AD', TRUE),
+  ('keda', 'KEDA', '云服务', '#326CE5', TRUE),
+  ('vault', 'HashiCorp Vault', '云服务', '#000000', TRUE),
+  ('packer', 'Packer', '云服务', '#02A8EF', TRUE),
+  ('crossplane', 'Crossplane', '云服务', '#3B82F6', TRUE),
+  ('loki', 'Loki', 'DevOps', '#F46800', TRUE),
+  ('tempo', 'Tempo', 'DevOps', '#F46800', TRUE),
+  ('jaeger', 'Jaeger', 'DevOps', '#66CFE3', TRUE),
+  ('k6', 'k6', 'DevOps', '#7D64FF', TRUE),
+  ('sonarqube', 'SonarQube', 'DevOps', '#4E9BCD', TRUE),
+  ('sentry', 'Sentry', 'DevOps', '#362D59', TRUE),
+
+  -- 安全扩展
+  ('waf', 'WAF', '安全方向', '#D71A1B', TRUE),
+  ('idsips', 'IDS/IPS', '安全方向', '#D71A1B', TRUE),
+  ('zerotrust', 'Zero Trust', '安全方向', '#D71A1B', TRUE),
+  ('sast', 'SAST', '安全方向', '#D71A1B', TRUE),
+  ('dast', 'DAST', '安全方向', '#D71A1B', TRUE),
+  ('iast', 'IAST', '安全方向', '#D71A1B', TRUE),
+  ('k8ssecurity', 'K8s Security', '安全方向', '#D71A1B', TRUE),
+
+  -- 测试工程扩展
+  ('testng', 'TestNG', '测试工程', '#25A162', TRUE),
+  ('jest', 'Jest', '测试工程', '#C21325', TRUE),
+  ('vitest', 'Vitest', '测试工程', '#729B1B', TRUE),
+  ('mocha', 'Mocha', '测试工程', '#8D6748', TRUE),
+  ('supertest', 'SuperTest', '测试工程', '#17202C', TRUE),
+  ('newman', 'Newman', '测试工程', '#FF6C37', TRUE),
+  ('allure', 'Allure', '测试工程', '#EE4C2C', TRUE),
+  ('jmeter', 'JMeter', '测试工程', '#D22128', TRUE)
+ON CONFLICT (slug) DO NOTHING;
+

@@ -4,35 +4,66 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { GraphNode } from '@/types';
 import { WeightPanel } from './weight-panel';
 
-interface TagWeight {
+interface StackItem {
   tag_id: number;
-  weight: number;
-  tag_label?: string;
-  tag_slug?: string;
+  slug: string;
+  label: string;
+  group_name: string;
+}
+
+interface TrackItem {
+  id: string;
+  label: string;
+  stacks: StackItem[];
+}
+
+interface DirectionItem {
+  id: string;
+  label: string;
+  tracks: TrackItem[];
 }
 
 export function GraphView() {
-  const [nodes, setNodes] = useState<GraphNode[]>([]);
+  const [directions, setDirections] = useState<DirectionItem[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(new Set());
   const [tagWeights, setTagWeights] = useState<Map<number, number>>(new Map());
+  const [activeDirectionId, setActiveDirectionId] = useState<string>('');
+  const [expandedTrackIds, setExpandedTrackIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [saveMessage, setSaveMessage] = useState('');
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // 加载节点数据
+  // 加载分类树（方向 -> 赛道 -> 技术栈）
   useEffect(() => {
-    async function loadNodes() {
+    async function loadTaxonomy() {
       try {
-        const res = await fetch('/api/graph/nodes');
+        const res = await fetch('/api/graph/taxonomy');
         const data = await res.json();
-        setNodes(data.nodes || []);
+        const loadedDirections = (data.directions || []) as DirectionItem[];
+        setDirections(loadedDirections);
+
+        if (loadedDirections.length > 0) {
+          setActiveDirectionId(loadedDirections[0].id);
+          const firstTrackIds = loadedDirections[0].tracks.slice(0, 2).map((t) => t.id);
+          setExpandedTrackIds(new Set(firstTrackIds));
+        }
       } catch (error) {
-        console.error('Failed to load nodes:', error);
+        console.error('Failed to load taxonomy:', error);
       } finally {
         setIsLoading(false);
       }
     }
-    loadNodes();
+    loadTaxonomy();
   }, []);
+
+  useEffect(() => {
+    if (!activeDirectionId) return;
+    const activeDirection = directions.find((dir) => dir.id === activeDirectionId);
+    if (!activeDirection) return;
+    const defaultExpanded = activeDirection.tracks.slice(0, 2).map((track) => `${activeDirection.id}:${track.id}`);
+    setExpandedTrackIds(new Set(defaultExpanded));
+  }, [activeDirectionId, directions]);
 
   // 加载标签权重
   useEffect(() => {
@@ -58,60 +89,29 @@ export function GraphView() {
     loadPreferences();
   }, []);
 
-  // 收集所有 L3 节点用于展示
-  const flattenL3Nodes = useCallback((nodeList: GraphNode[]): GraphNode[] => {
-    const result: GraphNode[] = [];
-    for (const node of nodeList) {
-      if (node.level === 3 && node.tag_id !== null) {
-        result.push(node);
+  const toggleTrackExpanded = useCallback((trackKey: string) => {
+    setExpandedTrackIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(trackKey)) {
+        next.delete(trackKey);
+      } else {
+        next.add(trackKey);
       }
-      if (node.children && node.children.length > 0) {
-        result.push(...flattenL3Nodes(node.children));
-      }
-    }
-    return result;
+      return next;
+    });
   }, []);
 
-  // 根据 L3 节点获取其 L1/L2 父节点信息
-  const getNodePath = useCallback(
-    (nodeId: number, nodeList: GraphNode[]): { l1: string; l2: string } | null => {
-      for (const node of nodeList) {
-        if (node.id === nodeId) {
-          return { l1: node.label, l2: '' };
-        }
-        if (node.children) {
-          for (const child of node.children) {
-            if (child.id === nodeId) {
-              return { l1: node.label, l2: child.label };
-            }
-            if (child.children) {
-              for (const l3 of child.children) {
-                if (l3.id === nodeId) {
-                  return { l1: node.label, l2: child.label };
-                }
-              }
-            }
-          }
-        }
-      }
-      return null;
-    },
-    [],
-  );
-
-  // 点击 L3 节点切换选中状态
-  const handleL3Click = useCallback(
-    (node: GraphNode) => {
-      if (node.tag_id === null) return;
-
+  // 点击技术栈切换选中状态
+  const handleStackClick = useCallback(
+    (stack: StackItem) => {
       setSelectedTagIds((prev) => {
         const next = new Set(prev);
-        if (next.has(node.tag_id!)) {
-          next.delete(node.tag_id!);
+        if (next.has(stack.tag_id)) {
+          next.delete(stack.tag_id);
         } else {
-          next.add(node.tag_id!);
-          if (!tagWeights.has(node.tag_id!)) {
-            setTagWeights((w) => new Map(w).set(node.tag_id!, 0.5));
+          next.add(stack.tag_id);
+          if (!tagWeights.has(stack.tag_id)) {
+            setTagWeights((w) => new Map(w).set(stack.tag_id, 0.5));
           }
         }
         return next;
@@ -131,15 +131,22 @@ export function GraphView() {
 
       debounceTimer.current = setTimeout(async () => {
         try {
-          await fetch('/api/graph/preferences', {
+          const res = await fetch('/api/graph/preferences', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               tag_weights: [{ tag_id: tagId, weight }],
             }),
           });
+          if (!res.ok) {
+            throw new Error(`save failed: ${res.status}`);
+          }
+          setSaveState('success');
+          setSaveMessage('已自动保存');
         } catch (error) {
           console.error('Failed to save weight:', error);
+          setSaveState('error');
+          setSaveMessage('自动保存失败，请点击“保存全部”重试');
         }
       }, 300);
     },
@@ -154,94 +161,138 @@ export function GraphView() {
     }));
 
     try {
-      await fetch('/api/graph/preferences', {
+      setSaveState('saving');
+      setSaveMessage('保存中...');
+      const res = await fetch('/api/graph/preferences', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tag_weights: weights }),
       });
+      if (!res.ok) {
+        throw new Error(`save failed: ${res.status}`);
+      }
+      setSaveState('success');
+      setSaveMessage('保存成功');
     } catch (error) {
       console.error('Failed to save all weights:', error);
+      setSaveState('error');
+      setSaveMessage('保存失败，请稍后重试');
     }
   }, [tagWeights]);
 
   // 获取选中的节点信息
   const getSelectedNodes = useCallback((): Array<{ node: GraphNode; weight: number }> => {
-    const allL3Nodes = flattenL3Nodes(nodes);
     const selected: Array<{ node: GraphNode; weight: number }> = [];
-
-    for (const node of allL3Nodes) {
-      if (node.tag_id !== null && selectedTagIds.has(node.tag_id)) {
-        selected.push({
-          node,
-          weight: tagWeights.get(node.tag_id!) ?? 0.5,
-        });
+    for (const direction of directions) {
+      for (const track of direction.tracks) {
+        for (const stack of track.stacks) {
+          if (selectedTagIds.has(stack.tag_id)) {
+            selected.push({
+              node: {
+                id: stack.tag_id,
+                parent_id: null,
+                level: 3,
+                label: `${stack.label} · ${track.label}`,
+                tag_id: stack.tag_id,
+                sort_order: 0,
+                created_at: '',
+              },
+              weight: tagWeights.get(stack.tag_id) ?? 0.5,
+            });
+          }
+        }
       }
     }
-
     return selected;
-  }, [nodes, selectedTagIds, tagWeights, flattenL3Nodes]);
+  }, [directions, selectedTagIds, tagWeights]);
+
+  const activeDirection = directions.find((dir) => dir.id === activeDirectionId) ?? null;
 
   if (isLoading) {
     return (
-      <div className="flex h-[600px] items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p className="text-text-secondary">加载中...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-[600px] overflow-hidden rounded-md border border-border">
+    <div className="flex h-full overflow-hidden rounded-md border border-border">
       {/* 左侧图谱区域 */}
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="space-y-6">
-          {nodes.map((l1Node) => (
-            <div key={l1Node.id} className="space-y-3">
-              {/* Level 1: 大方向 */}
-              <div className="rounded-md border-2 border-border bg-bg-card p-3 font-bold text-text-primary">
-                {l1Node.label}
-              </div>
-
-              {/* Level 2: 中类 */}
-              {l1Node.children && l1Node.children.length > 0 && (
-                <div className="ml-4 flex flex-wrap gap-2">
-                  {l1Node.children.map((l2Node) => (
-                    <div key={l2Node.id} className="space-y-2">
-                      <div className="rounded-md border border-border bg-bg-card p-2.5 font-medium text-text-primary">
-                        {l2Node.label}
-                      </div>
-
-                      {/* Level 3: 细分岗位 */}
-                      {l2Node.children && l2Node.children.length > 0 && (
-                        <div className="ml-4 flex flex-wrap gap-2">
-                          {l2Node.children.map((l3Node) => {
-                            const isSelected =
-                              l3Node.tag_id !== null && selectedTagIds.has(l3Node.tag_id!);
-                            return (
-                              <button
-                                key={l3Node.id}
-                                onClick={() => handleL3Click(l3Node)}
-                                className={`
-                                  rounded-md border p-2 text-sm transition-colors
-                                  ${
-                                    isSelected
-                                      ? 'border-accent-blue bg-accent-blue/10 text-accent-blue'
-                                      : 'border-border bg-bg-card text-text-primary hover:border-accent-blue/50'
-                                  }
-                                `}
-                              >
-                                {l3Node.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="mb-4">
+          <p className="mb-2 text-xs text-text-tertiary">第 1 层：先选大方向</p>
+          <div className="flex flex-wrap gap-2">
+            {directions.map((dir) => (
+              <button
+                key={dir.id}
+                onClick={() => setActiveDirectionId(dir.id)}
+                className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                  activeDirectionId === dir.id
+                    ? 'border-accent-blue bg-accent-blue/10 text-accent-blue'
+                    : 'border-border bg-bg-card text-text-primary hover:border-accent-blue/50'
+                }`}
+              >
+                {dir.label}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {activeDirection && (
+          <div className="space-y-3">
+            <p className="text-xs text-text-tertiary">第 2/3 层：展开赛道并多选技术栈</p>
+            {activeDirection.tracks.map((track) => {
+              const trackKey = `${activeDirection.id}:${track.id}`;
+              const expanded = expandedTrackIds.has(trackKey);
+              return (
+                <div key={trackKey} className="rounded-md border border-border bg-bg-card p-3">
+                  <button
+                    onClick={() => toggleTrackExpanded(trackKey)}
+                    className="flex w-full items-center justify-between text-left"
+                  >
+                    <span className="text-sm font-medium text-text-primary">
+                      {track.label} ({track.stacks.length})
+                    </span>
+                    <span className="text-text-tertiary">{expanded ? '−' : '+'}</span>
+                  </button>
+
+                  {expanded && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {track.stacks.map((stack) => {
+                        const isSelected = selectedTagIds.has(stack.tag_id);
+                        return (
+                          <button
+                            key={stack.tag_id}
+                            onClick={() => handleStackClick(stack)}
+                            className={`rounded-md border px-2.5 py-1.5 text-sm transition-colors ${
+                              isSelected
+                                ? 'border-accent-blue bg-accent-blue/10 text-accent-blue'
+                                : 'border-border bg-bg-card text-text-primary hover:border-accent-blue/50'
+                            }`}
+                          >
+                            {stack.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {!activeDirection && (
+          <p className="text-sm text-text-secondary">暂无可用技术栈，请检查 tags 数据。</p>
+        )}
+        <div className="mt-4 text-xs text-text-tertiary">
+          已选技术栈：{selectedTagIds.size}
+        </div>
+        {saveState !== 'idle' && (
+          <div className={`mt-2 text-xs ${saveState === 'error' ? 'text-red-600' : 'text-emerald-600'}`}>
+            {saveMessage}
+          </div>
+        )}
       </div>
 
       {/* 右侧权重面板 */}

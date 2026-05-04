@@ -68,7 +68,8 @@ WHERE search_vector IS NULL;
 -- 3. 为 companies 表添加模糊匹配索引
 -- ============================================================
 CREATE INDEX IF NOT EXISTS idx_companies_name_trgm ON companies USING GIN(name gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_companies_alias_trgm ON companies USING GIN(UNNEST(alias_names) gin_trgm_ops);
+-- Note: alias_names is JSONB array, cannot use UNNEST in index expression
+-- Use jsonb_path_ops or text_pattern_ops instead
 
 -- ============================================================
 -- 4. 用户行为记录表（用于用户画像）

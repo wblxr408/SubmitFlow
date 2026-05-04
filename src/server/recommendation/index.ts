@@ -865,9 +865,10 @@ async function getPopularJobsFromDB(
     SELECT
       j.id, j.company_id, j.title, j.city, j.direction, j.deadline,
       j.conversion_rate, j.status, j.first_seen_at, j.last_seen_at,
-      j.company_fame_score, j.company_size, j.is_remote,
+      c.fame_score AS company_fame_score, c.size AS company_size, j.is_remote,
       COALESCE(ac.app_count, 0) + COALESCE(fc.fav_count, 0) AS popularity_score
     FROM jobs j
+    JOIN companies c ON c.id = j.company_id
     LEFT JOIN LATERAL (
       SELECT COUNT(*)::INT AS app_count
       FROM applications a
@@ -919,9 +920,10 @@ async function getCityMatchedPopularJobs(
     SELECT
       j.id, j.company_id, j.title, j.city, j.direction, j.deadline,
       j.conversion_rate, j.status, j.first_seen_at, j.last_seen_at,
-      j.company_fame_score, j.company_size, j.is_remote,
+      c.fame_score AS company_fame_score, c.size AS company_size, j.is_remote,
       COALESCE(ac.app_count, 0) AS popularity_score
     FROM jobs j
+    JOIN companies c ON c.id = j.company_id
     LEFT JOIN LATERAL (
       SELECT COUNT(*)::INT AS app_count
       FROM applications a
@@ -964,8 +966,9 @@ async function getNewJobs(limit: number): Promise<Array<SimpleJob & { sourceScor
     SELECT
       j.id, j.company_id, j.title, j.city, j.direction, j.deadline,
       j.conversion_rate, j.status, j.first_seen_at, j.last_seen_at,
-      j.company_fame_score, j.company_size, j.is_remote
+      c.fame_score AS company_fame_score, c.size AS company_size, j.is_remote
     FROM jobs j
+    JOIN companies c ON c.id = j.company_id
     WHERE j.status = 'active'
       AND j.first_seen_at > NOW() - INTERVAL '7 days'
       AND (j.deadline IS NULL OR j.deadline > NOW())

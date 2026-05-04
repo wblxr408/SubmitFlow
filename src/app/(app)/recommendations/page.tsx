@@ -95,6 +95,7 @@ interface RecommendationJob extends Job {
   company_name: string;
   company_fame_score: number;
   composite_score: number;
+  match_level?: '完全匹配' | '近似匹配' | '不匹配';
   has_referral?: boolean;
   score_breakdown?: ScoreBreakdown;
 }
@@ -187,6 +188,20 @@ function JobCard({
             {job.city && (
               <Badge variant="default" className="text-xs">
                 {job.city}
+              </Badge>
+            )}
+            {job.match_level && (
+              <Badge
+                variant={
+                  job.match_level === '完全匹配'
+                    ? 'green'
+                    : job.match_level === '近似匹配'
+                    ? 'yellow'
+                    : 'red'
+                }
+                className="text-xs"
+              >
+                {job.match_level}
               </Badge>
             )}
             <Badge variant={deadlineText.includes('截止') ? 'yellow' : 'default'} className="text-xs">

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { AgentSession, AgentMessage, AgentProfileResult } from '@/types';
+import { GraphView } from '@/components/graph/graph-view';
 
 // ============================================================
 // Types
@@ -227,6 +228,7 @@ function WelcomePanel() {
 // Main Page
 // ============================================================
 export default function MatchPage() {
+  const [activeTab, setActiveTab] = useState<'tree' | 'chat'>('tree');
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [activeSession, setActiveSession] = useState<AgentSession | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -499,88 +501,125 @@ export default function MatchPage() {
           </div>
         </aside>
 
-        {/* ── Right: chat area ── */}
+        {/* ── Right: main area ── */}
         <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Chat header */}
-          {activeSession && (
-            <div className="flex h-12 shrink-0 items-center border-b border-border px-6 gap-3">
-              <span className="text-sm font-semibold text-text-primary">
-                {activeSession.summary?.slice(0, 50) || 'AI 建档对话'}
-              </span>
-              {activeSession.model_name && (
-                <Badge variant="default" className="text-2xs">
-                  {activeSession.model_name}
-                </Badge>
-              )}
+          {/* Header with Tabs */}
+          <div className="flex h-12 shrink-0 items-center border-b border-border px-6">
+            <div className="flex gap-4">
+              <button
+                onClick={() => setActiveTab('tree')}
+                className={`px-3 py-1.5 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'tree'
+                    ? 'border-accent-blue text-text-primary'
+                    : 'border-transparent text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                技术评估建档
+              </button>
+              <button
+                onClick={() => setActiveTab('chat')}
+                className={`px-3 py-1.5 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'chat'
+                    ? 'border-accent-blue text-text-primary'
+                    : 'border-transparent text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                AI 对话辅助
+              </button>
             </div>
-          )}
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-            {!activeSession && <WelcomePanel />}
-
-            {isLoading && activeSession && (
-              <div className="flex items-center gap-2 text-text-tertiary">
-                <div className="flex gap-1">
-                  <span className="h-2 w-2 rounded-full bg-text-tertiary animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="h-2 w-2 rounded-full bg-text-tertiary animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="h-2 w-2 rounded-full bg-text-tertiary animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-                <span className="text-xs">正在思考…</span>
-              </div>
-            )}
-
-            {messages.map((msg) => (
-              <MessageBubble key={msg.id} message={msg} />
-            ))}
-
-            <div ref={messagesEndRef} />
           </div>
 
-          {/* Input area */}
-          <div className="shrink-0 border-t border-border bg-bg-secondary/50 px-6 py-4">
-            {activeSession ? (
-              <div className="flex items-end gap-3">
-                <div className="flex-1 relative">
-                  <textarea
-                    ref={textareaRef}
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="输入消息，Enter 发送，Shift+Enter 换行…"
-                    disabled={isSending}
-                    rows={1}
-                    className="w-full resize-none rounded-md border border-border bg-bg-card px-3 py-2 pr-10 text-sm text-text-primary placeholder:text-text-tertiary focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-accent-blue disabled:cursor-not-allowed disabled:opacity-50"
-                    style={{ maxHeight: '120px', minHeight: '38px' }}
-                  />
-                  {/* Char count */}
-                  {inputValue.length > 0 && (
-                    <span className="absolute bottom-2 right-10 text-2xs text-text-tertiary">
-                      {inputValue.length}
-                    </span>
-                  )}
-                </div>
-                <Button
-                  onClick={handleSend}
-                  disabled={!inputValue.trim() || isSending}
-                  loading={isSending}
-                  variant="primary"
-                  size="md"
-                >
-                  {isSending ? '发送中' : '发送'}
-                </Button>
+          {/* Tab content */}
+          <div className="flex-1 overflow-hidden">
+            {activeTab === 'tree' ? (
+              <div className="h-full">
+                <GraphView />
               </div>
             ) : (
-              <div className="flex items-center justify-center">
-                <Button
-                  onClick={handleNewSession}
-                  disabled={isSending}
-                  loading={isSending}
-                  variant="primary"
-                  size="md"
-                >
-                  开始新的建档对话
-                </Button>
+              <div className="flex flex-col h-full">
+                {/* Chat header */}
+                {activeSession && (
+                  <div className="flex h-12 shrink-0 items-center border-b border-border px-6 gap-3">
+                    <span className="text-sm font-semibold text-text-primary">
+                      {activeSession.summary?.slice(0, 50) || 'AI 建档对话'}
+                    </span>
+                    {activeSession.model_name && (
+                      <Badge variant="default" className="text-2xs">
+                        {activeSession.model_name}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                  {!activeSession && <WelcomePanel />}
+
+                  {isLoading && activeSession && (
+                    <div className="flex items-center gap-2 text-text-tertiary">
+                      <div className="flex gap-1">
+                        <span className="h-2 w-2 rounded-full bg-text-tertiary animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="h-2 w-2 rounded-full bg-text-tertiary animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="h-2 w-2 rounded-full bg-text-tertiary animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                      <span className="text-xs">正在思考…</span>
+                    </div>
+                  )}
+
+                  {messages.map((msg) => (
+                    <MessageBubble key={msg.id} message={msg} />
+                  ))}
+
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input area */}
+                <div className="shrink-0 border-t border-border bg-bg-secondary/50 px-6 py-4">
+                  {activeSession ? (
+                    <div className="flex items-end gap-3">
+                      <div className="flex-1 relative">
+                        <textarea
+                          ref={textareaRef}
+                          value={inputValue}
+                          onChange={(e) => setInputValue(e.target.value)}
+                          onKeyDown={handleKeyDown}
+                          placeholder="输入消息，Enter 发送，Shift+Enter 换行…"
+                          disabled={isSending}
+                          rows={1}
+                          className="w-full resize-none rounded-md border border-border bg-bg-card px-3 py-2 pr-10 text-sm text-text-primary placeholder:text-text-tertiary focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-accent-blue disabled:cursor-not-allowed disabled:opacity-50"
+                          style={{ maxHeight: '120px', minHeight: '38px' }}
+                        />
+                        {/* Char count */}
+                        {inputValue.length > 0 && (
+                          <span className="absolute bottom-2 right-10 text-2xs text-text-tertiary">
+                            {inputValue.length}
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        onClick={handleSend}
+                        disabled={!inputValue.trim() || isSending}
+                        loading={isSending}
+                        variant="primary"
+                        size="md"
+                      >
+                        {isSending ? '发送中' : '发送'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <Button
+                        onClick={handleNewSession}
+                        disabled={isSending}
+                        loading={isSending}
+                        variant="primary"
+                        size="md"
+                      >
+                        开始新的建档对话
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
