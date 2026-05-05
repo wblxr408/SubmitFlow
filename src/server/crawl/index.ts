@@ -632,9 +632,17 @@ function inferDirection(raw: RawJobRecord): string | null {
 
 function buildCompanySearchVariants(companyName: string): string[] {
   const normalized = companyName.trim();
+  if (!normalized) return [];
+
+  const variants = new Set<string>();
+  variants.add(normalized);
+
   const compact = normalized.replace(/\s+/g, '');
+  if (compact !== normalized) variants.add(compact);
+
   const withoutBracket = compact.replace(/[（(].*?[）)]/g, '');
-  const variants = [normalized, compact, withoutBracket];
+  if (withoutBracket !== compact && withoutBracket) variants.add(withoutBracket);
+
   const suffixPatterns = [
     /股份有限公司$/u,
     /有限责任公司$/u,
@@ -644,15 +652,24 @@ function buildCompanySearchVariants(companyName: string): string[] {
   ];
 
   for (const base of [compact, withoutBracket]) {
+    if (!base) continue;
     for (const pattern of suffixPatterns) {
       const stripped = base.replace(pattern, '').trim();
-      if (stripped.length >= 2) {
-        variants.push(stripped);
+      if (stripped && stripped !== base && stripped.length >= 2) {
+        variants.add(stripped);
+        let current = stripped;
+        for (const p2 of suffixPatterns) {
+          const stripped2 = current.replace(p2, '').trim();
+          if (stripped2 && stripped2 !== current && stripped2.length >= 2) {
+            variants.add(stripped2);
+            current = stripped2;
+          }
+        }
       }
     }
   }
 
-  return [...new Set(variants.filter(Boolean))];
+  return [...variants].slice(0, 10);
 }
 
 function nullIfBlank(value: string | null | undefined): string | null {

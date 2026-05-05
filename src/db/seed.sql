@@ -170,7 +170,12 @@ INSERT INTO job_sources (source_name, source_type, priority)
 VALUES
   ('官网直接投递', 'public', 10),
   ('牛客网', 'public', 8),
+  ('实习僧', 'public', 7),
+  ('应届生求职网', 'public', 7),
+  ('前程无忧', 'public', 7),
+  ('BOSS直聘', 'public', 6),
+  ('天眼查', 'public', 5),
   ('脉脉', 'public_referral', 7),
-  ('小红书', 'private_import', 5),
+  ('小红书', 'public', 5),
   ('内推鸭', 'public_referral', 6)
 ON CONFLICT (source_name) DO NOTHING;

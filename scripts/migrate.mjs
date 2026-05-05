@@ -5,7 +5,7 @@
  * Execution order:
  * 1. schema.sql - Basic table structure
  * 2. seed.sql - Basic seed data
- * 3. migrations/006-011 - v1.3 migration scripts
+ * 3. migrations/001-017 - incremental migration scripts
  * 4. companies-extended.sql - Extended company data
  */
 import { Client } from 'pg';
@@ -22,15 +22,12 @@ const orderedMigrationFiles = readdirSync(migrationDir)
   .sort((a, b) => a.localeCompare(b, 'en'));
 
 const MIGRATION_ORDER = [
-  // Basic table structure
   { name: 'schema.sql', path: join(__dirname, '..', 'src', 'db', 'schema.sql') },
   { name: 'seed.sql', path: join(__dirname, '..', 'src', 'db', 'seed.sql') },
   ...orderedMigrationFiles.map((name) => ({
     name,
     path: join(migrationDir, name),
   })),
-
-  // Extended company data
   { name: 'companies-extended.sql', path: join(__dirname, '..', 'src', 'db', 'companies-extended.sql') },
 ];
 
@@ -53,7 +50,6 @@ async function migrate() {
         await client.query(sql);
         console.log(`Executed: ${migration.name}`);
       } catch (err) {
-        // Ignore ON CONFLICT DO NOTHING errors
         if (err.code === '23505' || err.message.includes('duplicate')) {
           console.log(`Skipped (already exists): ${migration.name}`);
         } else {

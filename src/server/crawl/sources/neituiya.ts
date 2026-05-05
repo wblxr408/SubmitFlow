@@ -14,7 +14,7 @@ const API_BASE_URL = 'https://www.neituiya.com/bapeApi';
 const DETAIL_PAGE_URL = 'https://www.neituiya.com/detail';
 const LIST_PAGE_SIZE = 15;
 const DEFAULT_MAX_PAGES_PER_CATEGORY = 2;
-const DEFAULT_MAX_DISCOVERED_ITEMS = 240;
+const DEFAULT_MAX_DISCOVERED_ITEMS = 500;
 
 const HTTP_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
@@ -659,10 +659,6 @@ function normalizeRecruitType(text: string, taxRecruitType: string | null | unde
 
   if (/实习/u.test(combined)) {
     return '实习';
-  }
-
-  if (/社招|社会招聘/u.test(combined)) {
-    return '社招';
   }
 
   if (/校招|秋招|春招|\d{4}届/u.test(combined)) {
