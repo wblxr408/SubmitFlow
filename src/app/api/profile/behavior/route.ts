@@ -41,12 +41,12 @@ const INTERACTION_TYPES = [
 ];
 
 export async function POST(request: NextRequest) {
-  const authContext = await getAuthContext();
+  const authContext = await getAuthContext(request);
   if (!authContext) {
     return NextResponse.json({ error: '未登录' }, { status: 401 });
   }
 
-  const profileId = authContext.profileId;
+  const profileId = authContext.userId;
 
   try {
     const body = await request.json();
@@ -156,12 +156,12 @@ export async function POST(request: NextRequest) {
  * GET /api/profile/behavior - 获取用户行为统计摘要
  */
 export async function GET(request: NextRequest) {
-  const authContext = await getAuthContext();
+  const authContext = await getAuthContext(request);
   if (!authContext) {
     return NextResponse.json({ error: '未登录' }, { status: 401 });
   }
 
-  const profileId = authContext.profileId;
+  const profileId = authContext.userId;
 
   try {
     // 获取推荐上下文（包含交互统计）

@@ -236,7 +236,7 @@ export default function IntegrationsPage() {
                       {item.parsed_role ?? item.matched_job_title ?? '未识别岗位'}
                     </p>
                     <p className="text-xs text-text-tertiary">
-                      置信度 {item.confidence?.toFixed(2) ?? '0.00'} · {formatDate(item.created_at)}
+                      置信度 {typeof item.confidence === 'number' ? item.confidence.toFixed(2) : (Number(item.confidence) || 0).toFixed(2)} · {formatDate(item.created_at)}
                     </p>
                   </div>
                   <div className="flex gap-2">

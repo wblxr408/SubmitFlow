@@ -154,7 +154,7 @@ export default function ProfileSettingsPage() {
                 key={item.tag_id}
                 className="rounded-full border border-border bg-bg-secondary px-2.5 py-1 text-xs text-text-primary"
               >
-                {item.tag_label} · {item.weight.toFixed(2)}
+                {item.tag_label} · {Number(item.weight).toFixed(2)}
               </span>
             ))}
           </div>

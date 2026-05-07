@@ -46,7 +46,7 @@ export function WeightPanel({
                   {node.label}
                 </span>
                 <span className="text-sm tabular-nums text-text-secondary">
-                  {weight.toFixed(2)}
+                  {Number(weight).toFixed(2)}
                 </span>
               </div>
               <input

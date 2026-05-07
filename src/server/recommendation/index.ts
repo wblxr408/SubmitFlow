@@ -759,22 +759,18 @@ export const DIVERSITY_PRESETS = {
 /**
  * 应用多样性控制
  */
-interface DiversityJob {
-  id: number;
-  company_id: number;
-  city: string | null;
-  compositeScore: number;
-}
 
-export function applyDiversityControl(
-  jobs: DiversityJob[],
+export function applyDiversityControl<
+  T extends { company_id: number; city: string | null; composite_score: number }
+>(
+  jobs: T[],
   config: DiversityConfig
-): DiversityJob[] {
+): T[] {
   if (jobs.length === 0) return jobs;
 
   // 1. 按公司分组限制
   const companyCounts = new Map<number, number>();
-  const limitedByCompany: DiversityJob[] = [];
+  const limitedByCompany: T[] = [];
 
   for (const job of jobs) {
     const companyId = job.company_id;
@@ -786,7 +782,7 @@ export function applyDiversityControl(
   }
 
   // 2. 城市分布（保留各城市优质岗位）
-  const cityMap = new Map<string, DiversityJob[]>();
+  const cityMap = new Map<string, T[]>();
   for (const job of limitedByCompany) {
     const city = job.city ?? 'unknown';
     if (!cityMap.has(city)) cityMap.set(city, []);
@@ -794,14 +790,14 @@ export function applyDiversityControl(
   }
 
   // 合并回列表，优先保留各城市 top 岗位
-  const diversified: DiversityJob[] = [];
+  const diversified: T[] = [];
   for (const [, cityJobs] of cityMap) {
-    cityJobs.sort((a, b) => (b.compositeScore ?? 0) - (a.compositeScore ?? 0));
+    cityJobs.sort((a, b) => (b.composite_score ?? 0) - (a.composite_score ?? 0));
     const keepCount = Math.ceil(config.minCitySpread * cityJobs.length);
     diversified.push(...cityJobs.slice(0, keepCount));
   }
 
-  return diversified.sort((a, b) => (b.compositeScore ?? 0) - (a.compositeScore ?? 0));
+  return diversified.sort((a, b) => (b.composite_score ?? 0) - (a.composite_score ?? 0));
 }
 
 // ============================================================

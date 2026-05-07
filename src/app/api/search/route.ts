@@ -37,8 +37,8 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(20, parseInt(searchParams.get('limit') ?? '10', 10));
 
   // 获取用户上下文（可选）
-  const authContext = await getAuthContext();
-  const profileId = authContext?.profileId;
+  const authContext = await getAuthContext(request);
+  const profileId = authContext?.userId;
 
   try {
     let result;

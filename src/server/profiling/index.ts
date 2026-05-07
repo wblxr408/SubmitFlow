@@ -481,6 +481,8 @@ export interface InterestScore {
   interestType: 'company' | 'position' | 'industry' | 'skill' | 'city' | 'direction';
   interestKey: string;
   score: number;
+  decayFactor: number;       // 衰减因子 v1.7 新增
+  lastBehaviorAt: string | null;  // 最后行为时间 v1.7 新增
   behaviorCount: number;
   stability?: number;      // 稳定性评分 v1.6 新增
   driftDirection?: DriftDirection;  // 漂移方向 v1.6 新增
@@ -857,7 +859,7 @@ async function updateInterestScoreV2(
   if (targetType !== 'job' || !targetId || !targetTitle) return;
 
   // 行为权重配置（比旧版更细致）
-  const weights: Record<BehaviorTypeV2, number> = {
+  const weights: Partial<Record<BehaviorTypeV2, number>> = {
     apply: 0.50, apply_start: 0.30, favorite: 0.20,
     view_JD: 0.12, view_detail: 0.08, view_company: 0.06,
     search: 0.08, search_refine: 0.05, filter_change: 0.03,
@@ -1546,7 +1548,7 @@ export async function getUserInterests(
 
   const rows = await query(`
     SELECT interest_type, interest_key, score, behavior_count,
-           decay_factor, peak_score
+           decay_factor, peak_score, last_behavior_at
     FROM user_interest_scores
     WHERE ${conditions.join(' AND ')}
     ORDER BY score DESC
@@ -1560,10 +1562,13 @@ export async function getUserInterests(
     behavior_count: number;
     decay_factor?: number;
     peak_score?: number;
+    last_behavior_at?: string;
   }>).map(r => ({
     interestType: r.interest_type as InterestScore['interestType'],
     interestKey: r.interest_key,
     score: Number(r.score),
+    decayFactor: r.decay_factor ?? 1,
+    lastBehaviorAt: r.last_behavior_at ?? null,
     behaviorCount: Number(r.behavior_count),
   }));
 }
@@ -1622,11 +1627,11 @@ export async function getUserProfileStats(profileId: number): Promise<{
       COALESCE((SELECT COUNT(*) FROM user_behavior_events WHERE profile_id = $1 AND created_at > NOW() - INTERVAL '7 days'), 0) AS active_7d
   `, [profileId]);
 
-  const searchHistoryCount = await query(`
+  const searchHistoryCount = await query<{ count: string }>(`
     SELECT COUNT(*) FROM search_history WHERE profile_id = $1
   `, [profileId]);
 
-  const interestCount = await query(`
+  const interestCount = await query<{ count: string }>(`
     SELECT COUNT(*) FROM user_interest_scores WHERE profile_id = $1
   `, [profileId]);
 
@@ -1741,6 +1746,7 @@ export async function recordSearch(
       behaviorCategory: 'engagement',
       targetType: 'search',
       targetTitle: searchQuery,
+      interactionIntensity: 0.1,
       metadata: { searchType, resultCount },
     });
   } catch (err) {

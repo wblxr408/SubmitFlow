@@ -101,6 +101,8 @@ interface SessionProfileRow {
 }
 
 interface RecommendationCandidateRow extends Record<string, unknown> {
+  company_id: number;
+  city: string | null;
   title: string | null;
   direction: string | null;
   jd_text: string | null;
@@ -412,14 +414,22 @@ export async function GET(request: NextRequest) {
   );
 
   // v3: 冷启动处理
-  let recommendations: Array<Record<string, unknown>>;
+  let recommendations: Array<Record<string, unknown> & {
+    company_id: number;
+    city: string | null;
+    composite_score: number;
+  }>;
 
   if (context.isColdStart) {
     // 冷启动：使用多策略融合
     const coldStartSources = await getColdStartRecommendations(context, resultLimit);
 
     // 合并冷启动来源
-    const coldStartJobs: Array<Record<string, unknown>> = [];
+    const coldStartJobs: Array<Record<string, unknown> & {
+      company_id: number;
+      city: string | null;
+      composite_score: number;
+    }> = [];
     for (const source of coldStartSources) {
       for (const job of source.jobs) {
         const jobTagIds = Array.isArray((job as { tags?: Array<{ id: number }> }).tags)
@@ -459,14 +469,14 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    recommendations.sort((a, b) => (b.composite_score ?? 50) - (a.composite_score ?? 50));
+    recommendations.sort((a, b) => ((b.composite_score as number) ?? 50) - ((a.composite_score as number) ?? 50));
 
     // v3: 应用多样性控制
     const diversityConfig = DIVERSITY_PRESETS[diversityPreset] ?? DIVERSITY_PRESETS.平衡型;
     recommendations = applyDiversityControl(
-      recommendations as unknown as Array<typeof recommendations[0] & { compositeScore: number }>,
-      diversityConfig
-    ) as typeof recommendations;
+      recommendations,
+      diversityConfig,
+    );
   }
 
   return NextResponse.json({

@@ -7,6 +7,7 @@ import { Job51Adapter } from './sources/51job';
 import { ZhipinAdapter } from './sources/zhipin';
 import { CompanyCareersAdapter } from './sources/companycareers';
 import { TianyanchaAdapter } from './sources/tianyancha';
+import { UniversityAdapter } from './sources/university';
 
 const neituiyaAdapter = new NeituiyaAdapter();
 const niukeAdapter = new NiukeAdapter();
@@ -16,6 +17,7 @@ const job51Adapter = new Job51Adapter();
 const zhipinAdapter = new ZhipinAdapter();
 const companyCareersAdapter = new CompanyCareersAdapter();
 const tianyanchaAdapter = new TianyanchaAdapter();
+const universityAdapter = new UniversityAdapter();
 
 const sourceAdapters = new Map<string, SourceAdapter>([
   [neituiyaAdapter.sourceName, neituiyaAdapter],
@@ -26,6 +28,7 @@ const sourceAdapters = new Map<string, SourceAdapter>([
   [zhipinAdapter.sourceName, zhipinAdapter],
   [companyCareersAdapter.sourceName, companyCareersAdapter],
   [tianyanchaAdapter.sourceName, tianyanchaAdapter],
+  [universityAdapter.sourceName, universityAdapter],
 ]);
 
 export function getSourceAdapter(sourceName: string): SourceAdapter | undefined {

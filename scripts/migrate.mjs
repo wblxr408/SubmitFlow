@@ -9,9 +9,32 @@
  * 4. companies-extended.sql - Extended company data
  */
 import { Client } from 'pg';
-import { readFileSync, readdirSync } from 'fs';
+import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+
+/**
+ * Load .env.local then .env into process.env (simple parser, no extra deps)
+ */
+function loadEnv() {
+  for (const envFile of ['.env.local', '.env']) {
+    if (!existsSync(envFile)) continue;
+    const lines = readFileSync(envFile, 'utf-8').split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const idx = trimmed.indexOf('=');
+      if (idx < 0) continue;
+      const key = trimmed.slice(0, idx).trim();
+      const value = trimmed.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
+      if (key && !process.env[key]) {
+        process.env[key] = value;
+      }
+    }
+  }
+}
+
+loadEnv();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -63,6 +86,7 @@ async function migrate() {
     console.log('\nMigration completed successfully');
   } catch (err) {
     console.error('\nMigration failed');
+    console.error(String(err.stack || err));
     process.exit(1);
   } finally {
     await client.end();

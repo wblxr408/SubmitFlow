@@ -20,6 +20,8 @@ const PUBLIC_PATHS = [
   '/api/health',
   '/api/graph/taxonomy',
   '/api/graph/preferences',
+  '/api/crawl/run',      // 开发调试用，部署时移除或加 IP 白名单
+  '/api/crawl/runs',
 ];
 
 const API_PREFIX = '/api/';

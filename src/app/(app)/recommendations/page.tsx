@@ -313,7 +313,7 @@ function WeightSlider({
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-bg-secondary accent-accent-blue"
       />
-      <span className="text-xs font-medium text-text-primary">{value.toFixed(2)}</span>
+      <span className="text-xs font-medium text-text-primary">{Number(value).toFixed(2)}</span>
     </div>
   );
 }

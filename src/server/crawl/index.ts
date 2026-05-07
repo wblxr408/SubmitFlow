@@ -41,6 +41,7 @@ export interface CrawlExecutionResult {
   rawRecords: number;
   entrypoints: number;
   failedItems: number;
+  failedItemDetails?: Array<{ sourceJobId: string; error: string }>;
   error?: string;
 }
 
@@ -293,7 +294,15 @@ async function executeSingleRun(run: PendingCrawlRun): Promise<CrawlExecutionRes
         }
       } catch (err) {
         result.failedItems += 1;
-        log.warn({ err, runId: run.id, source: run.source_name, item }, 'Failed to persist crawl item');
+        const sourceJobId = item.source_job_id ?? 'unknown';
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        log.warn({ err, runId: run.id, source: run.source_name, sourceJobId, item }, 'Failed to persist crawl item');
+        if (result.failedItemDetails === undefined) {
+          result.failedItemDetails = [];
+        }
+        if (result.failedItemDetails.length < 10) {
+          result.failedItemDetails.push({ sourceJobId, error: errorMsg });
+        }
       }
     }
   } catch (err) {
@@ -314,6 +323,7 @@ async function finalizeRun(run: PendingCrawlRun, result: CrawlExecutionResult): 
     rawRecords: result.rawRecords,
     entrypoints: result.entrypoints,
     failedItems: result.failedItems,
+    failedItemDetails: result.failedItemDetails ?? null,
     error: result.error ?? null,
   };
 
@@ -348,6 +358,12 @@ async function persistCrawlItem(
       `INSERT INTO raw_job_records
          (crawl_run_id, source_name, source_job_id, raw_payload, normalized_payload, parse_status)
        VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, 'processed')
+       ON CONFLICT (source_name, source_job_id) DO UPDATE
+         SET crawl_run_id = EXCLUDED.crawl_run_id,
+             raw_payload = EXCLUDED.raw_payload,
+             normalized_payload = EXCLUDED.normalized_payload,
+             parse_status = 'processed',
+             updated_at = NOW()
        RETURNING id`,
       [
         run.id,
@@ -575,21 +591,31 @@ async function syncJobEntrypoints(
       continue;
     }
 
-    await client.query(
-      `INSERT INTO job_entrypoints
-         (job_id, entry_type, entry_url, visibility, requires_auth, referrer_name, source_name, source_job_id, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')`,
-      [
-        jobId,
-        entrypoint.entry_type,
-        entrypoint.entry_url,
-        entrypoint.visibility,
-        entrypoint.requires_auth,
-        entrypoint.referrer_name ?? null,
-        sourceName,
-        sourceJobId,
-      ],
-    );
+    try {
+      await client.query(
+        `INSERT INTO job_entrypoints
+           (job_id, entry_type, entry_url, visibility, requires_auth, referrer_name, source_name, source_job_id, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')
+         ON CONFLICT (job_id, entry_type, entry_url) DO UPDATE
+           SET visibility = EXCLUDED.visibility,
+               requires_auth = EXCLUDED.requires_auth,
+               referrer_name = EXCLUDED.referrer_name,
+               status = 'active',
+               valid_until = NULL`,
+        [
+          jobId,
+          entrypoint.entry_type,
+          entrypoint.entry_url,
+          entrypoint.visibility,
+          entrypoint.requires_auth,
+          entrypoint.referrer_name ?? null,
+          sourceName,
+          sourceJobId,
+        ],
+      );
+    } catch {
+      // If the upsert still fails (e.g., null entry_url), skip silently
+    }
   }
 
   return uniqueEntrypoints.length;

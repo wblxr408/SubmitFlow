@@ -22,7 +22,8 @@ import {
   clearSearchHistory,
   calculateActivityScore,
 } from '@/server/profiling';
-import { buildRecommendationContext, getTopInterests as getTopInterestsFromProfiling } from '@/server/recommendation';
+import { buildRecommendationContext } from '@/server/recommendation';
+import { getTopInterests as getTopInterestsFromProfiling } from '@/server/profiling';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('api/profile');
@@ -42,12 +43,12 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const action = searchParams.get('action') ?? 'stats';
 
-  const authContext = await getAuthContext();
+  const authContext = await getAuthContext(request);
   if (!authContext) {
     return NextResponse.json({ error: '未登录' }, { status: 401 });
   }
 
-  const profileId = authContext.profileId;
+  const profileId = authContext.userId;
 
   try {
     switch (action) {

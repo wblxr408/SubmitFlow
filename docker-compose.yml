@@ -50,6 +50,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.worker
+      args:
+        - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+        - JWT_SECRET=${JWT_SECRET:-}
     environment:
       - NODE_ENV=production
       - DOCKER_ENV=1

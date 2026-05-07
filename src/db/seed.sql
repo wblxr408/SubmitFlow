@@ -169,6 +169,7 @@ ON CONFLICT DO NOTHING;
 INSERT INTO job_sources (source_name, source_type, priority)
 VALUES
   ('官网直接投递', 'public', 10),
+  ('高校就业网', 'public', 9),
   ('牛客网', 'public', 8),
   ('实习僧', 'public', 7),
   ('应届生求职网', 'public', 7),

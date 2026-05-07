@@ -79,7 +79,7 @@ function ProfileCard({ profile }: { profile: AgentProfileResult }) {
           <div className="flex flex-wrap gap-1.5">
             {profile.tag_weights.map((item, idx) => (
               <Badge key={idx} variant="blue" className="font-normal">
-                #{item.tag_id} ×{item.weight.toFixed(1)}
+                #{item.tag_id} ×{Number(item.weight).toFixed(1)}
               </Badge>
             ))}
           </div>
