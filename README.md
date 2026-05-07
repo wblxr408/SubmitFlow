@@ -133,15 +133,22 @@ npm run dev
 npm run worker
 ```
 
-### 6. Docker 一键启动（Linux 服务器）
+### 6. Docker 启动
+
+**Windows 一键启动（推荐）：**
+
+```powershell
+# 一键启动所有服务 + 自动打开浏览器
+.\start-compose.ps1
+```
+
+> 需要强制重建：`docker compose -f docker-compose.yml --env-file .env build --no-cache`
+
+**Linux 服务器部署：**
 
 ```bash
-# 1. 复制并配置环境变量
-cp .env.example .env.local
-
-# 2. 编辑 .env.local 填写所有密钥
-
-# 3. 一键启动
+cp .env.example .env
+# 编辑 .env 填写所有密钥
 docker compose up --build
 ```
 

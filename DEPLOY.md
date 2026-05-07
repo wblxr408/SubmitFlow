@@ -16,38 +16,27 @@
 
 ---
 
-## 快速启动（Windows 一键部署）
-
-### 方式一：本地开发模式
+## 快速启动（Windows）
 
 ```powershell
-# 1. 克隆项目
-git clone <your-repo-url>
-cd SubmitFlow
+# Docker 一键启动（db + app + worker + 自动打开浏览器）
+.\start-compose.ps1
+```
 
-# 2. 一键启动（自动完成所有步骤）
+**其他方式：**
+
+```powershell
+# 本地开发：自动安装依赖、启动数据库、运行迁移
 .\scripts\start-dev.ps1
 
-# 或使用 Docker PostgreSQL
-.\scripts\start-dev.ps1 -DockerDb
-```
-
-### 方式二：Docker 部署（推荐生产环境）
-
-```powershell
-# 一键启动
+# Docker 部署（完整交互式）
 .\scripts\start-docker.ps1
 
-# 跳过构建，使用已有镜像
-.\scripts\start-docker.ps1 -SkipBuild
-
-# 重置数据卷
-.\scripts\start-docker.ps1 -ResetData
+# 仅启动 PostgreSQL（本地已安装时）
+.\start-pg.ps1
 ```
 
-### 启动前检查
-
-如果启动遇到问题，先运行检查脚本：
+**启动前检查：**
 
 ```powershell
 .\scripts\check-system.ps1
@@ -242,6 +231,16 @@ docker compose ps
 ---
 
 ## 一键启动脚本说明
+
+### start-compose.ps1（根目录）
+
+**Docker 一键启动脚本**，启动所有服务并自动打开浏览器。
+
+```powershell
+.\start-compose.ps1
+```
+
+> 直接在项目根目录运行即可，无需切换目录。
 
 ### check-system.ps1
 
@@ -633,23 +632,26 @@ docker system prune -f
 
 ```
 SubmitFlow/
-├── scripts/                  # 一键启动脚本
-│   ├── check-system.ps1     # 系统环境检查
-│   ├── start-dev.ps1         # 本地开发启动
-│   └── start-docker.ps1      # Docker 部署启动
+├── start-compose.ps1           # Docker 一键启动（推荐）
+├── start-pg.ps1                # 启动本地 PostgreSQL
+├── scripts/
+│   ├── check-system.ps1       # 系统环境检查
+│   ├── start-dev.ps1           # 本地开发启动
+│   └── start-docker.ps1        # Docker 完整交互部署
 ├── src/
-│   ├── app/                  # Next.js App Router
-│   ├── components/           # React 组件
-│   ├── lib/                  # 工具函数
-│   ├── server/               # 服务端逻辑
-│   ├── db/                   # 数据库相关
-│   │   ├── schema.sql       # 完整数据库 schema
-│   │   ├── seed.sql         # 种子数据
-│   │   └── migrations/      # 增量迁移
-│   └── worker/               # 后台任务
-├── docker-compose.yml        # Docker 编排
-├── Dockerfile                # 应用镜像
-├── .env.example             # 环境变量模板
+│   ├── app/                    # Next.js App Router
+│   ├── components/             # React 组件
+│   ├── lib/                    # 工具函数
+│   ├── server/                 # 服务端逻辑
+│   ├── db/                     # 数据库相关
+│   │   ├── schema.sql         # 完整数据库 schema
+│   │   ├── seed.sql           # 种子数据
+│   │   └── migrations/         # 增量迁移
+│   └── worker/                 # 后台任务
+├── docker-compose.yml           # Docker 编排
+├── Dockerfile                   # 应用镜像
+├── Dockerfile.worker            # Worker 镜像
+├── .env.example                 # 环境变量模板
 └── package.json
 ```
 

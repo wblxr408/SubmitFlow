@@ -41,6 +41,18 @@ tmp/
 temp/
 *.tmp
 
+# Claude
+.claude/
+
+# Codex
+.codex/
+
+# Cursor
+.cursor/
+
+# Kilo
+.kilo/
+
 # IDE
 *.sublime-*
 *. KomodoEdit*
