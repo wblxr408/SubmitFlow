@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne, execute } from '@/lib/db';
 import type { AgentSession, AgentMessage, AiTaskType } from '@/types';
 import { AIOrchestrator } from '@/server/ai';
+import { createLogger } from '@/lib/logger';
 
+const log = createLogger('api/match/session');
 const DEFAULT_PROFILE_ID = 1;
 
 export async function POST(request: NextRequest) {
@@ -69,8 +71,8 @@ export async function POST(request: NextRequest) {
             [reply.slice(0, 200), JSON.stringify(resultJson), session_id],
           );
         }
-      } catch {
-        // ignore parse errors
+      } catch (err) {
+        log.warn({ err, sessionId: session_id }, 'Failed to parse result JSON from AI reply');
       }
     }
     return NextResponse.json({ reply, is_final: isFinal });

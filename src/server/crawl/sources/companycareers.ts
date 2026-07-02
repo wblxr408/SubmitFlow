@@ -17,6 +17,13 @@ const HTTP_HEADERS = {
 
 const log = createLogger('crawl/companycareers');
 
+const BYTEDANCE_COMPANY_NAMES = /字节|ByteDance|bytedance|TikTok/i;
+const BYTEDANCE_CAREERS_URLS = [
+  'https://jobs.bytedance.com/campus',
+  'https://campus.bytedance.com/',
+  'https://careers.bytedance.com/',
+];
+
 // ============================================================
 // Company Groups (by industry)
 // ============================================================
@@ -419,6 +426,14 @@ export class CompanyCareersAdapter implements SourceAdapter {
 
     if (Array.isArray(data)) {
       for (const item of data) {
+        // Skip @graph wrappers — they are processed below via the obj['@graph'] branch
+        if (
+          typeof item === 'object' &&
+          item !== null &&
+          (item as Record<string, unknown>)['@type'] === '@graph'
+        ) {
+          continue;
+        }
         items.push(...this.extractJobsFromJsonLd(item, companyName, careersUrl));
       }
       return items;
@@ -542,6 +557,12 @@ export class CompanyCareersAdapter implements SourceAdapter {
     const city = this.extractCityFromHtml(jdText || '');
     const deadline = this.extractDeadline(jdText || '');
 
+    const rawUrl = payload.detail_url || '';
+    const isByteDance = BYTEDANCE_COMPANY_NAMES.test(companyName);
+    const entryUrl = rawUrl && rawUrl.startsWith('http') && !isByteDance
+      ? rawUrl
+      : (BYTEDANCE_CAREERS_URLS.find((u) => u !== rawUrl) ?? BYTEDANCE_CAREERS_URLS[0]);
+
     const normalized: CompanyNormalizedJob = {
       company_name: companyName,
       title,
@@ -550,7 +571,7 @@ export class CompanyCareersAdapter implements SourceAdapter {
       internship_type: internshipType,
       deadline,
       jd_text: jdText,
-      entry_url: payload.detail_url || raw.source_job_id,
+      entry_url: entryUrl,
       source_job_id: raw.source_job_id,
     };
 

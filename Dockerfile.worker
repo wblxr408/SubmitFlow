@@ -6,7 +6,7 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
-RUN npm config set registry https://registry.npmmirror.com && npm install -g pnpm@latest && pnpm install --frozen-lockfile --prod=false
+RUN npm config set registry https://registry.npmmirror.com && npm install -g pnpm@9 && pnpm install --frozen-lockfile --prod=false
 
 # Stage 2: Copy source (no playwright needed for worker)
 FROM base AS builder

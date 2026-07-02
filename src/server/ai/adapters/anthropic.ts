@@ -53,7 +53,7 @@ export class AnthropicAdapter implements ProviderAdapter {
       temperature: input.temperature ?? 0.7,
     });
     const block = response.content[0];
-    const text = block.type === 'text' ? block.text : '';
+    const text = block?.type === 'text' ? block.text : '';
     return {
       content: text,
       usage: {

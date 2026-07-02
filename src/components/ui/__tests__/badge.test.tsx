@@ -13,12 +13,12 @@ describe('Badge Component', () => {
   });
 
   it('renders with custom variant', () => {
-    render(<Badge variant="success">Success</Badge>);
-    expect(screen.getByText('Success')).toBeDefined();
+    render(<Badge variant="blue">Blue</Badge>);
+    expect(screen.getByText('Blue')).toBeDefined();
   });
 
   it('renders with different variants', () => {
-    const variants = ['default', 'success', 'warning', 'error', 'info'] as const;
+    const variants = ['default', 'blue', 'green', 'red', 'yellow'] as const;
 
     variants.forEach((variant) => {
       const { container } = render(

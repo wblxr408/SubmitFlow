@@ -11,6 +11,7 @@ import type {
 } from '../types';
 
 const SEARCH_API = 'https://www.tianyancha.com/cloud-other-information/company-job/';
+const BYTEDANCE_CAREERS_URL = 'https://jobs.bytedance.com/campus';
 const HTTP_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
   Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -26,6 +27,7 @@ const INCLUDE_TECH = /字节|腾讯|阿里|百度|美团|京东|拼多多|网易
 type TianyanchaNormalizedJob = NormalizedJob & {
   entry_url: string;
   source_job_id: string;
+  company_name: string;
 };
 
 export class TianyanchaAdapter implements SourceAdapter {
@@ -125,7 +127,6 @@ export class TianyanchaAdapter implements SourceAdapter {
       { id: '10006593', name: '知乎' },
       { id: '10006595', name: '豆瓣' },
       { id: '10006597', name: '得物' },
-      { id: '10006599', name: '小红书' },
       { id: '10006601', name: 'Soul' },
       { id: '10006603', name: '探探' },
       { id: '10006605', name: '陌陌' },
@@ -330,13 +331,18 @@ export class TianyanchaAdapter implements SourceAdapter {
       company_name?: string;
       detail_html?: string;
       detail_url?: string;
+      title?: string;
       city?: string;
       salary?: string;
       date?: string;
     };
 
     const companyName = cleanText(payload.company_name || '');
-    const title = cleanText(raw.source_job_id.split('_').pop() || '');
+    const title = cleanText(
+      payload.title ||
+      raw.source_job_id.split('_').pop() ||
+      '',
+    );
 
     if (!companyName) {
       throw new Error(`Tianyancha job ${raw.source_job_id} is missing company_name`);
@@ -348,6 +354,11 @@ export class TianyanchaAdapter implements SourceAdapter {
       jdText || payload.detail_html || '',
     );
 
+    const rawUrl = payload.detail_url || '';
+    const entryUrl = isValidUrl(rawUrl)
+      ? rawUrl
+      : BYTEDANCE_CAREERS_URL;
+
     const normalized: TianyanchaNormalizedJob = {
       company_name: companyName,
       title: title || jdText?.split('\n')[0]?.slice(0, 40) || '招聘岗位',
@@ -356,7 +367,7 @@ export class TianyanchaAdapter implements SourceAdapter {
       internship_type: internshipType,
       deadline: null,
       jd_text: jdText,
-      entry_url: payload.detail_url || raw.source_job_id,
+      entry_url: entryUrl,
       source_job_id: raw.source_job_id,
     };
 
@@ -408,7 +419,7 @@ export class TianyanchaAdapter implements SourceAdapter {
         entry_url: tyJob.entry_url,
         visibility: 'public',
         requires_auth: false,
-        referrer_name: '天眼查',
+        referrer_name: tyJob.company_name,
         source_job_id: tyJob.source_job_id,
       },
     ];
@@ -443,6 +454,10 @@ function cleanText(value: string | null | undefined): string {
     .replace(/\n{3,}/gu, '\n\n')
     .replace(/[ \t]{2,}/gu, ' ')
     .trim();
+}
+
+function isValidUrl(value: string): boolean {
+  return /^https?:\/\//.test(value);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

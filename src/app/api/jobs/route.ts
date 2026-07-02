@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     paramIdx++;
   }
   if (industry) {
-    conditions.push(`c.industry = $${paramIdx}`);
+    conditions.push(`cf.industry = $${paramIdx}`);
     params.push(industry);
     paramIdx++;
   }
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     async () => {
       const rows = await query<Job & { company_name: string; company_fame_score: number; tags: Tag[]; has_referral: boolean; company_size: string }>(
         `WITH company_fames AS (
-           SELECT id, name, fame_score, size FROM companies
+           SELECT id, name, fame_score, size, industry FROM companies
          ),
          job_tags_agg AS (
            SELECT job_id,

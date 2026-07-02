@@ -437,7 +437,7 @@ const CAMPUS_KEYWORD_PATTERNS = /校园招聘|秋招|春招|202[4-9]届|20\d{2}�
 const SKIP_PATTERNS = /宣讲会|笔经|面经|经验分享|求职信|简历模板|笔试真题|面试技巧|大赛|挑战赛|管理培训生|精英计划|博雅|博雅讲堂|讲座|沙龙|分享会|茶话会|工作坊|研讨会/iu;
 
 // Pattern: company name must be a recognized tech company
-const INCLUDE_TECH_COMPANY = /字节|腾讯|阿里|百度|美团|京东|拼多多|网易|快手|滴滴|小米|华为|OPPO|vivo|苹果|谷歌|Meta|微软|亚马逊|NVIDIA|Intel|AMD|高通|三星|商汤|旷视|依图|科大讯飞|海康威视|寒武纪|地平线|龙芯|中兴|蚂蚁|蚂蚁集团|蚂蚁金服|蚂蚁科技|蚂蚁财富|腾讯云|阿里云|阿里影业|饿了么|口碑|盒马|菜鸟|高德|优酷|UC|夸克|神策|同程|携程|去哪儿|马蜂窝|猎聘|智联|前程无忧|BOSS直聘|拉勾|脉脉|小红书|抖音|字节跳动|TikTok|小红书|Soul|Keep|喜马拉雅|蜻蜓FM|荔枝|虎牙|斗鱼|哔哩|Steam莉莉丝|鹰角|米哈游|完美世界|盛趣游戏|西山居|巨人网络|网易游戏|腾讯游戏|阿里巴巴|蚂蚁集团|蚂蚁科技/iu;
+const INCLUDE_TECH_COMPANY = /字节|腾讯|阿里|百度|美团|京东|拼多多|网易|快手|滴滴|小米|华为|OPPO|vivo|苹果|谷歌|Meta|微软|亚马逊|NVIDIA|Intel|AMD|高通|三星|商汤|旷视|依图|科大讯飞|海康威视|寒武纪|地平线|龙芯|中兴|蚂蚁|蚂蚁集团|蚂蚁金服|蚂蚁科技|蚂蚁财富|腾讯云|阿里云|阿里影业|饿了么|口碑|盒马|菜鸟|高德|优酷|UC|夸克|神策|同程|携程|去哪儿|马蜂窝|猎聘|智联|前程无忧|BOSS直聘|拉勾|脉脉|小红书|抖音|字节跳动|TikTok|Soul|Keep|喜马拉雅|蜻蜓FM|荔枝|虎牙|斗鱼|哔哩|Steam莉莉丝|鹰角|米哈游|完美世界|盛趣游戏|西山居|巨人网络|网易游戏|腾讯游戏|阿里巴巴|蚂蚁集团|蚂蚁科技/iu;
 
 // Pattern: company name must NOT be a non-tech company (university-specific filter)
 const EXCLUDE_NON_TECH_COMPANY = /房产中介|保险公司|平安保险|中国人寿|太平洋保险|新华保险|泰康保险/iu;

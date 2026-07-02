@@ -5,7 +5,7 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
-RUN npm config set registry https://registry.npmmirror.com && npm install -g pnpm@latest && pnpm install --frozen-lockfile
+RUN npm config set registry https://registry.npmmirror.com && npm install -g pnpm@9 && pnpm install --frozen-lockfile
 
 # Stage 2: Build
 FROM base AS builder

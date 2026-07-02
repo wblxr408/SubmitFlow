@@ -1,0 +1,8 @@
+$b = [System.IO.File]::ReadAllBytes("d:\SubmitFlow\src\app\(app)\referrals\page.tsx")
+$text = [System.Text.Encoding]::UTF8.GetString($b)
+$lns = $text.Split("`n")
+Write-Host ("Total lines: " + $lns.Count)
+Write-Host ("Line 439: '" + $lns[438] + "'")
+Write-Host ("Line 440: '" + $lns[439] + "'")
+Write-Host ("Line 441: '" + $lns[440] + "'")
+Write-Host ("Line 442: '" + $lns[441] + "'")

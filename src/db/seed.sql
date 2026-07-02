@@ -165,18 +165,28 @@ ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- 抓取来源种子
+-- Priority 说明：
+--   Tier 1 (优先抓取): 官网直接投递=10, 内推鸭=9
+--   Tier 2 (次优先):   高校就业网=8, 牛客网=7
+--   Tier 3 (标准):     实习僧=6, 应届生求职网=6, 前程无忧=5, BOSS直聘=5
+--   Tier 4 (补充):     脉脉=4, 天眼查=3, 小红书=2
+-- 同一优先级内按 last_crawled_at ASC 轮流（未抓取过的优先）
 -- ============================================================
-INSERT INTO job_sources (source_name, source_type, priority)
+INSERT INTO job_sources (source_name, source_type, priority, is_enabled)
 VALUES
-  ('官网直接投递', 'public', 10),
-  ('高校就业网', 'public', 9),
-  ('牛客网', 'public', 8),
-  ('实习僧', 'public', 7),
-  ('应届生求职网', 'public', 7),
-  ('前程无忧', 'public', 7),
-  ('BOSS直聘', 'public', 6),
-  ('天眼查', 'public', 5),
-  ('脉脉', 'public_referral', 7),
-  ('小红书', 'public', 5),
-  ('内推鸭', 'public_referral', 6)
-ON CONFLICT (source_name) DO NOTHING;
+  ('官网直接投递', 'public', 10, TRUE),
+  ('内推鸭', 'public_referral', 9, TRUE),
+  ('高校就业网', 'public', 8, TRUE),
+  ('牛客网', 'public_referral', 7, TRUE),
+  ('拉勾网', 'public', 6, TRUE),
+  ('实习僧', 'public', 5, TRUE),
+  ('应届生求职网', 'public', 5, TRUE),
+  ('前程无忧', 'public', 4, TRUE),
+  ('BOSS直聘', 'public', 4, TRUE),
+  ('脉脉', 'public_referral', 3, TRUE),
+  ('天眼查', 'public', 2, TRUE),
+  ('小红书', 'public', 1, TRUE)
+ON CONFLICT (source_name) DO UPDATE SET
+  priority = EXCLUDED.priority,
+  source_type = EXCLUDED.source_type,
+  is_enabled = EXCLUDED.is_enabled;
